@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch } from "lucide-react"
 import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
+import { EfficiencyComparison } from "@/components/efficiency-comparison"
 
 export default function HomePage() {
   return (
@@ -206,6 +207,21 @@ export default function HomePage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <BenchmarkDashboard />
+        </div>
+      </section>
+
+      {/* Algorithm Efficiency Comparison Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Algorithm Performance Analysis</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Comprehensive comparison of HAWS-QAOA against traditional optimization methods, showcasing quantum
+              advantage in route planning
+            </p>
+          </div>
+
+          <EfficiencyComparison />
         </div>
       </section>
 
