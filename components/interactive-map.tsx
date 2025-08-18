@@ -22,6 +22,8 @@ import {
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
 import { LeafletMap } from "@/components/leaflet-map"
+import { ResultsVisualization } from "@/components/results-visualization"
+import { NavigationPanel } from "@/components/navigation-panel"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
@@ -263,242 +265,251 @@ export function InteractiveMap() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Map Canvas */}
-      <div className="lg:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Interactive Route Map
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {isDepotMode
-                ? "Click on the map to place the depot (starting point)"
-                : "Click on the map to add delivery stops. Use 'Set Depot' to change the starting point."}
-            </p>
-          </CardHeader>
-          <CardContent>
-            {/* Error Display */}
-            {error && (
-              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                <span className="text-sm text-destructive">{error}</span>
-              </div>
-            )}
-
-            {isDepotMode && (
-              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span className="text-sm text-primary font-medium">
-                  Depot placement mode active - Click to set new depot location
-                </span>
-              </div>
-            )}
-
-            {/* Progress Display */}
-            {isOptimizing && (
-              <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm font-medium">{optimizationStatus}</span>
-                </div>
-                <Progress value={optimizationProgress} className="h-2" />
-              </div>
-            )}
-
-            <div className="relative">
-              <LeafletMap
-                stops={stops}
-                routes={routes}
-                selectedRoute={selectedRoute}
-                onMapClick={handleMapClick}
-                onStopRemove={removeStop}
-                isOptimizing={isOptimizing}
-                isDepotMode={isDepotMode}
-              />
-
-              {/* Map Controls */}
-              <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
-                <Button
-                  size="sm"
-                  variant={isDepotMode ? "default" : "outline"}
-                  onClick={toggleDepotMode}
-                  disabled={isOptimizing}
-                  className={isDepotMode ? "bg-primary text-primary-foreground" : ""}
-                >
-                  <MapPin className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline" onClick={clearStops} disabled={isOptimizing}>
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Control Panel */}
-      <div className="space-y-6">
-        {/* Stops List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Delivery Stops ({stops.length})</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Click <MapPin className="w-3 h-3 inline mx-1" /> to change depot location
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {stops.map((stop) => (
-              <div key={stop.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{stop.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
-                    </span>
-                  </div>
-                  {stop.isDepot && (
-                    <Badge variant="secondary" className="text-xs">
-                      Depot
-                    </Badge>
-                  )}
-                </div>
-                {!stop.isDepot && (
-                  <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <div className="text-xs text-muted-foreground pt-2 border-t">
-              <Plus className="w-3 h-3 inline mr-1" />
-              {isDepotMode ? "Click map to set depot" : "Click map to add stops"}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Advanced Parameter Controls */}
-        <AdvancedParameterControls
-          quantumParams={quantumParams}
-          classicalParams={classicalParams}
-          onQuantumParamsChange={setQuantumParams}
-          onClassicalParamsChange={setClassicalParams}
-          onReset={clearStops}
-          onExport={exportResults}
-          onShare={shareConfiguration}
-          isOptimizing={isOptimizing}
-        />
-
-        {/* Optimization Button */}
-        <Button onClick={optimizeRoutes} disabled={stops.length < 3 || isOptimizing} className="w-full" size="lg">
-          {isOptimizing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Optimizing...
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4 mr-2" />
-              Run Optimization
-            </>
-          )}
-        </Button>
-
-        {/* Results */}
-        {routes.length > 0 && (
+    <div className="space-y-6">
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Map Canvas */}
+        <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-secondary" />
-                  Results ({routes.length})
-                </CardTitle>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={shareConfiguration}>
-                    <Share2 className="w-3 h-3" />
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Interactive Route Map
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {isDepotMode
+                  ? "Click on the map to place the depot (starting point)"
+                  : "Click on the map to add delivery stops. Use 'Set Depot' to change the starting point."}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {/* Error Display */}
+              {error && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">{error}</span>
+                </div>
+              )}
+
+              {isDepotMode && (
+                <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-primary font-medium">
+                    Depot placement mode active - Click to set new depot location
+                  </span>
+                </div>
+              )}
+
+              {/* Progress Display */}
+              {isOptimizing && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm font-medium">{optimizationStatus}</span>
+                  </div>
+                  <Progress value={optimizationProgress} className="h-2" />
+                </div>
+              )}
+
+              <div className="relative">
+                <LeafletMap
+                  stops={stops}
+                  routes={routes}
+                  selectedRoute={selectedRoute}
+                  onMapClick={handleMapClick}
+                  onStopRemove={removeStop}
+                  isOptimizing={isOptimizing}
+                  isDepotMode={isDepotMode}
+                />
+
+                {/* Map Controls */}
+                <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
+                  <Button
+                    size="sm"
+                    variant={isDepotMode ? "default" : "outline"}
+                    onClick={toggleDepotMode}
+                    disabled={isOptimizing}
+                    className={isDepotMode ? "bg-primary text-primary-foreground" : ""}
+                  >
+                    <MapPin className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={exportResults}>
-                    <Download className="w-3 h-3" />
+                  <Button size="sm" variant="outline" onClick={clearStops} disabled={isOptimizing}>
+                    <RotateCcw className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {routes.map((route) => (
-                <div
-                  key={route.name}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedRoute?.name === route.name
-                      ? "border-accent bg-accent/10"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedRoute(route)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getRouteColor(route.solver, route.name) }}
-                      />
-                      <span className="font-medium text-sm">{route.name}</span>
-                      {route.solver === "quantum" && <Zap className="w-3 h-3 text-accent" />}
-                    </div>
-                    <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
-                      {route.feasible ? "Valid" : "Invalid"}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                    <div>Distance: {route.length.toFixed(1)} km</div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {route.runtimeMs}ms
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {routes.length > 1 && (
-                <>
-                  <Separator />
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    {routes.find((r) => r.solver === "quantum") && (
-                      <div className="flex justify-between">
-                        <span>Best Classical:</span>
-                        <span className="font-medium">
-                          {Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length)).toFixed(1)}{" "}
-                          km
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Best Overall:</span>
-                      <span className="font-medium text-accent">
-                        {Math.min(...routes.map((r) => r.length)).toFixed(1)} km
-                      </span>
-                    </div>
-                    {routes.find((r) => r.solver === "quantum") && (
-                      <div className="flex justify-between">
-                        <span>Quantum Advantage:</span>
-                        <span className="font-medium text-accent">
-                          {(
-                            ((Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length)) -
-                              Math.min(...routes.filter((r) => r.solver === "quantum").map((r) => r.length))) /
-                              Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length))) *
-                            100
-                          ).toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
-        )}
+        </div>
+
+        {/* Control Panel */}
+        <div className="space-y-6">
+          {/* Stops List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Delivery Stops ({stops.length})</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Click <MapPin className="w-3 h-3 inline mx-1" /> to change depot location
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {stops.map((stop) => (
+                <div key={stop.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{stop.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                      </span>
+                    </div>
+                    {stop.isDepot && (
+                      <Badge variant="secondary" className="text-xs">
+                        Depot
+                      </Badge>
+                    )}
+                  </div>
+                  {!stop.isDepot && (
+                    <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <div className="text-xs text-muted-foreground pt-2 border-t">
+                <Plus className="w-3 h-3 inline mr-1" />
+                {isDepotMode ? "Click map to set depot" : "Click map to add stops"}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Advanced Parameter Controls */}
+          <AdvancedParameterControls
+            quantumParams={quantumParams}
+            classicalParams={classicalParams}
+            onQuantumParamsChange={setQuantumParams}
+            onClassicalParamsChange={setClassicalParams}
+            onReset={clearStops}
+            onExport={exportResults}
+            onShare={shareConfiguration}
+            isOptimizing={isOptimizing}
+          />
+
+          {/* Optimization Button */}
+          <Button onClick={optimizeRoutes} disabled={stops.length < 3 || isOptimizing} className="w-full" size="lg">
+            {isOptimizing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Optimizing...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Run Optimization
+              </>
+            )}
+          </Button>
+
+          {/* Results */}
+          {routes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-secondary" />
+                    Results ({routes.length})
+                  </CardTitle>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={shareConfiguration}>
+                      <Share2 className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={exportResults}>
+                      <Download className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {routes.map((route) => (
+                  <div
+                    key={route.name}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedRoute?.name === route.name
+                        ? "border-accent bg-accent/10"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                    onClick={() => setSelectedRoute(route)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: getRouteColor(route.solver, route.name) }}
+                        />
+                        <span className="font-medium text-sm">{route.name}</span>
+                        {route.solver === "quantum" && <Zap className="w-3 h-3 text-accent" />}
+                      </div>
+                      <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
+                        {route.feasible ? "Valid" : "Invalid"}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>Distance: {route.length.toFixed(1)} km</div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {route.runtimeMs}ms
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {routes.length > 1 && (
+                  <>
+                    <Separator />
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {routes.find((r) => r.solver === "quantum") && (
+                        <div className="flex justify-between">
+                          <span>Best Classical:</span>
+                          <span className="font-medium">
+                            {Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length)).toFixed(
+                              1,
+                            )}{" "}
+                            km
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Best Overall:</span>
+                        <span className="font-medium text-accent">
+                          {Math.min(...routes.map((r) => r.length)).toFixed(1)} km
+                        </span>
+                      </div>
+                      {routes.find((r) => r.solver === "quantum") && (
+                        <div className="flex justify-between">
+                          <span>Quantum Advantage:</span>
+                          <span className="font-medium text-accent">
+                            {(
+                              ((Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length)) -
+                                Math.min(...routes.filter((r) => r.solver === "quantum").map((r) => r.length))) /
+                                Math.min(...routes.filter((r) => r.solver === "classical").map((r) => r.length))) *
+                              100
+                            ).toFixed(1)}
+                            %
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
+        <NavigationPanel stops={stops} selectedRoute={selectedRoute} />
       </div>
     </div>
   )
