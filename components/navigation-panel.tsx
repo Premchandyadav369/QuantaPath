@@ -3,17 +3,37 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Navigation, Clock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, MapPin, Route } from "lucide-react"
+import {
+  Navigation,
+  Clock,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw,
+  MapPin,
+  Route,
+  ArrowUpRight,
+  ArrowDownLeft,
+} from "lucide-react"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
+import { DistanceService } from "@/lib/services/distance-service"
+import { useEffect, useState } from "react"
 
 interface NavigationStep {
   from: DeliveryStop
   to: DeliveryStop
   distance: number
   duration: number // in minutes
-  direction: "forward" | "left" | "right" | "backward"
+  direction: "forward" | "left" | "right" | "backward" | "sharp-left" | "sharp-right" | "u-turn" | "straight"
   bearing: number
   instruction: string
+  turnInstructions?: Array<{
+    type: string
+    instruction: string
+    distance: number
+    duration: number
+  }>
 }
 
 interface NavigationPanelProps {
@@ -22,6 +42,52 @@ interface NavigationPanelProps {
 }
 
 export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) {
+  const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchDetailedRoute = async () => {
+      if (!selectedRoute || stops.length < 2) {
+        setNavigationSteps([])
+        return
+      }
+
+      setIsLoading(true)
+      try {
+        const distanceService = DistanceService.getInstance()
+        const detailedRoute = await distanceService.getDetailedRoute(stops, selectedRoute.tour)
+
+        const steps: NavigationStep[] = detailedRoute.segments.map((segment, index) => ({
+          from: segment.fromStop,
+          to: segment.toStop,
+          distance: segment.distance,
+          duration: segment.duration,
+          direction: mapInstructionTypeToDirection(segment.instructions[0]?.type || "straight"),
+          bearing: calculateBearing(segment.fromStop.lat, segment.fromStop.lng, segment.toStop.lat, segment.toStop.lng),
+          instruction:
+            segment.instructions[0]?.instruction ||
+            generateFallbackInstruction(segment.fromStop, segment.toStop, index === 0),
+          turnInstructions: segment.instructions.map((inst) => ({
+            type: inst.type,
+            instruction: inst.instruction,
+            distance: inst.distance,
+            duration: inst.duration,
+          })),
+        }))
+
+        setNavigationSteps(steps)
+      } catch (error) {
+        console.warn("Failed to fetch detailed route, using fallback:", error)
+        // Fallback to original calculation method
+        setNavigationSteps(calculateNavigationSteps())
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDetailedRoute()
+  }, [selectedRoute, stops])
+
   if (!selectedRoute || stops.length < 2) {
     return (
       <Card>
@@ -41,7 +107,36 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
     )
   }
 
-  // Calculate navigation steps from the route
+  const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
+    switch (type) {
+      case "left":
+        return "left"
+      case "right":
+        return "right"
+      case "sharp-left":
+        return "sharp-left"
+      case "sharp-right":
+        return "sharp-right"
+      case "u-turn":
+        return "u-turn"
+      case "straight":
+        return "straight"
+      default:
+        return "forward"
+    }
+  }
+
+  const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
+    if (isFirst && from.isDepot) {
+      return `Start from ${from.name} and head towards ${to.name}`
+    }
+    if (to.isDepot) {
+      return `Return to ${to.name}`
+    }
+    return `Continue to ${to.name}`
+  }
+
+  // Calculate navigation steps from the route (fallback method)
   const calculateNavigationSteps = (): NavigationStep[] => {
     const steps: NavigationStep[] = []
     const tour = selectedRoute.tour
@@ -113,7 +208,7 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
     return (bearing + 360) % 360
   }
 
-  const getDirection = (currentBearing: number, previousBearing: number): "forward" | "left" | "right" | "backward" => {
+  const getDirection = (currentBearing: number, previousBearing: number): NavigationStep["direction"] => {
     if (previousBearing === 0) return "forward" // First step
 
     let angleDiff = currentBearing - previousBearing
@@ -149,19 +244,24 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
   const getDirectionIcon = (direction: string) => {
     switch (direction) {
       case "forward":
+      case "straight":
         return <ArrowUp className="w-4 h-4" />
       case "left":
         return <ArrowLeft className="w-4 h-4" />
       case "right":
         return <ArrowRight className="w-4 h-4" />
+      case "sharp-left":
+        return <ArrowDownLeft className="w-4 h-4" />
+      case "sharp-right":
+        return <ArrowUpRight className="w-4 h-4" />
       case "backward":
+      case "u-turn":
         return <RotateCcw className="w-4 h-4" />
       default:
         return <ArrowUp className="w-4 h-4" />
     }
   }
 
-  const navigationSteps = calculateNavigationSteps()
   const totalDistance = navigationSteps.reduce((sum, step) => sum + step.distance, 0)
   const totalDuration = navigationSteps.reduce((sum, step) => sum + step.duration, 0)
 
@@ -171,6 +271,9 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
         <CardTitle className="flex items-center gap-2">
           <Navigation className="w-5 h-5" />
           Turn-by-Turn Navigation
+          {isLoading && (
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          )}
         </CardTitle>
         <div className="flex gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
@@ -206,6 +309,17 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
                   </div>
 
                   <p className="text-sm text-muted-foreground mb-2">{step.instruction}</p>
+
+                  {step.turnInstructions && step.turnInstructions.length > 1 && (
+                    <div className="mb-2 p-2 bg-muted/20 rounded text-xs">
+                      <div className="font-medium mb-1">Detailed Instructions:</div>
+                      {step.turnInstructions.slice(1).map((turn, turnIndex) => (
+                        <div key={turnIndex} className="text-muted-foreground">
+                          • {turn.instruction} ({turn.distance.toFixed(1)} km)
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">

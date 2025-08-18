@@ -159,7 +159,7 @@ export function LeafletMap({
     routeLinesRef.current.forEach((line) => map.removeLayer(line))
     routeLinesRef.current = []
 
-    // Add new route lines
+    // Add new route lines with direction arrows
     routes.forEach((route) => {
       if (!route.feasible || route.tour.length === 0) return
 
@@ -183,6 +183,31 @@ export function LeafletMap({
         dashArray,
       }).addTo(map)
 
+      if (isSelected && routeCoords.length > 1) {
+        for (let i = 0; i < routeCoords.length - 1; i++) {
+          const start = routeCoords[i]
+          const end = routeCoords[i + 1]
+
+          // Calculate midpoint for arrow placement
+          const midLat = (start[0] + end[0]) / 2
+          const midLng = (start[1] + end[1]) / 2
+
+          // Calculate bearing for arrow rotation
+          const bearing = calculateBearing(start[0], start[1], end[0], end[1])
+
+          // Create arrow marker
+          const arrowIcon = L.divIcon({
+            className: "route-arrow",
+            html: `<div class="arrow-icon" style="transform: rotate(${bearing}deg)">➤</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          })
+
+          const arrowMarker = L.marker([midLat, midLng], { icon: arrowIcon }).addTo(map)
+          routeLinesRef.current.push(arrowMarker)
+        }
+      }
+
       routeLinesRef.current.push(polyline)
     })
   }, [routes, selectedRoute, stops, isLoaded])
@@ -191,6 +216,17 @@ export function LeafletMap({
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
     return "#0D1B2A"
+  }
+
+  const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const dLng = ((lng2 - lng1) * Math.PI) / 180
+    const lat1Rad = (lat1 * Math.PI) / 180
+    const lat2Rad = (lat2 * Math.PI) / 180
+
+    const y = Math.sin(dLng) * Math.cos(lat2Rad)
+    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng)
+
+    return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
   }
 
   return (
@@ -276,6 +312,30 @@ export function LeafletMap({
         
         .marker-remove:hover {
           background: #dc2626;
+        }
+        
+        /* Added styles for route direction arrows */
+        .route-arrow {
+          background: transparent;
+          border: none;
+          pointer-events: none;
+        }
+        
+        .arrow-icon {
+          color: #7B2CBF;
+          font-size: 16px;
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+        }
+        
+        /* Enhanced route visualization */
+        .leaflet-interactive {
+          cursor: crosshair;
         }
       `}</style>
     </>

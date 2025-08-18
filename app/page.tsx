@@ -64,17 +64,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Animated Route Visualization Placeholder */}
-          <div className="mt-16 max-w-4xl mx-auto">
-            <div className="bg-card border rounded-xl p-8 shadow-lg">
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Route className="w-16 h-16 text-accent mx-auto mb-4" />
-                  <p className="text-muted-foreground">Interactive Route Optimization Demo</p>
-                  <p className="text-sm text-muted-foreground mt-2">Quantum vs Classical comparison visualization</p>
-                </div>
-              </div>
-            </div>
+          {/* Interactive Route Optimization Demo */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <InteractiveMap />
           </div>
         </div>
       </section>
@@ -192,14 +184,50 @@ export default function HomePage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Interactive Demo</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Advanced Features</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Experience quantum route optimization in action. Place delivery stops and watch our algorithms compete in
-              real-time.
+              Explore advanced quantum optimization parameters, algorithm comparisons, and detailed performance
+              analytics.
             </p>
           </div>
 
-          <InteractiveMap />
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card>
+              <CardHeader>
+                <Cpu className="w-12 h-12 text-accent mb-4" />
+                <CardTitle>Quantum Parameters</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Fine-tune QAOA depth, shots, and optimization methods for different problem sizes and requirements.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <BarChart3 className="w-12 h-12 text-accent mb-4" />
+                <CardTitle>Algorithm Comparison</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Compare quantum HAWS-QAOA against classical methods like Simulated Annealing and Nearest Neighbor.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Route className="w-12 h-12 text-accent mb-4" />
+                <CardTitle>Real-time Navigation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Get turn-by-turn directions with accurate timing using OpenRouteService integration.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
