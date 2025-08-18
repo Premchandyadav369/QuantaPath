@@ -64,6 +64,7 @@
   --chart-3: #06d6a0;
   --chart-4: #adb5bd;
   --chart-5: #6c757d;
+  --radius: 0.625rem;
   --sidebar: #0d1b2a;
   --sidebar-foreground: #f8f9fa;
   --sidebar-primary: #7b2cbf;
@@ -121,5 +122,53 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer components {
+  .leaflet-container {
+    @apply rounded-lg border border-border;
+  }
+
+  .leaflet-popup-content-wrapper {
+    @apply bg-card text-card-foreground rounded-md shadow-lg;
+  }
+
+  .leaflet-popup-tip {
+    @apply bg-card;
+  }
+
+  .leaflet-control-zoom a {
+    @apply bg-card text-card-foreground border-border hover:bg-muted;
+  }
+
+  .leaflet-control-attribution {
+    @apply bg-card/80 text-muted-foreground text-xs;
+  }
+}
+
+@layer utilities {
+  .pulse-quantum {
+    animation: pulse-quantum 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-quantum {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+
+  .crosshair-cursor {
+    cursor: crosshair;
+  }
+
+  .depot-highlight {
+    box-shadow: 0 0 0 3px rgb(123 44 191 / 0.3);
   }
 }
