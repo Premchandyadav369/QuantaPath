@@ -23,7 +23,7 @@
 </p>
 
 <h3 align="center">
-  <a href="https://v0-quanta-path-setup.vercel.app/"><strong>👉Live Demo to QuantaPath</strong></a>
+  <a href="https://quanta-path-setup.vercel.app/"><strong>👉Live Demo to QuantaPath</strong></a>
 </h3>
 
 ---
