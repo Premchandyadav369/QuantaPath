@@ -1,14 +1,13 @@
 <div align="center">
 
- ____            _                  _   _       _
-| __ )  __ _  __| |_ __ __ _ _ __  | | | | __ _| |_ __ _
-|  _ \ / _` |/ _` | '__/ _` | '_ \ | |_| |/ _` | __/ _` |
-| |_) | (_| | (_| | | | (_| | |_) | |  _  | (_| | || (_| |
-|____/ \__,_|\__,_|_|  \__,_| .__/  |_| |_|\__,_|\__\__,_|
-                            |_|
-       Quantum-Powered Path Optimization
+ __      __    _      ___  ___   ____   _      _   _   ____
+ \ \    / /   / \    |   \/   | |  _ \ | |    | | | | / __ \
+  \ \  / /   / _ \   | |\  /| | | |_) || |    | | | | | |  | |
+   \ \/ /   / ___ \  | | \/ | | |  __/ | |    | |_| | | |__| |
+    \__/   /_/   \_\ |_|    |_| |_|    |_|    |_____| \____/
 
 </div>
+<h3 align="center">Discover the Future in Every Superposition.</h3>
 
 <p align="center">
   <a href="https://v0-quanta-path-setup.vercel.app/">
@@ -154,4 +153,3 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
 ## 📜 License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-.
