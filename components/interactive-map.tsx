@@ -24,6 +24,7 @@ import { AdvancedParameterControls } from "@/components/advanced-parameter-contr
 import { LeafletMap } from "@/components/leaflet-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
+import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
@@ -575,6 +576,23 @@ export function InteractiveMap() {
         <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
         <NavigationPanel stops={stops} selectedRoute={selectedRoute} />
       </div>
+
+      {routes.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">🌱</div>
+              Environmental Impact Analysis
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Carbon footprint and sustainability metrics for optimized routes
+            </p>
+          </CardHeader>
+          <CardContent>
+            <CarbonFootprintCalculator routes={routes} selectedRoute={selectedRoute} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
