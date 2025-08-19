@@ -4,75 +4,79 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f8f9fa;
-  --foreground: #0d1b2a;
-  --card: #ffffff;
-  --card-foreground: #0d1b2a;
-  --popover: #ffffff;
-  --popover-foreground: #0d1b2a;
-  --primary: #0d1b2a;
-  --primary-foreground: #f8f9fa;
-  --secondary: #06d6a0;
-  --secondary-foreground: #0d1b2a;
-  --muted: #e9ecef;
-  --muted-foreground: #6c757d;
-  --accent: #7b2cbf;
-  --accent-foreground: #f8f9fa;
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: #dee2e6;
-  --input: #dee2e6;
-  --ring: #7b2cbf;
-  --chart-1: #0d1b2a;
-  --chart-2: #7b2cbf;
-  --chart-3: #06d6a0;
-  --chart-4: #495057;
-  --chart-5: #adb5bd;
-  --radius: 0.625rem;
-  --sidebar: #f8f9fa;
-  --sidebar-foreground: #0d1b2a;
-  --sidebar-primary: #0d1b2a;
-  --sidebar-primary-foreground: #f8f9fa;
-  --sidebar-accent: #e9ecef;
-  --sidebar-accent-foreground: #0d1b2a;
-  --sidebar-border: #dee2e6;
-  --sidebar-ring: #7b2cbf;
+  /* Updated to quantum realm theme with deep space backgrounds and glowing cyan accents */
+  --background: #0a0a0f;
+  --foreground: #ffffff;
+  --card: #1a1a2e;
+  --card-foreground: #ffffff;
+  --popover: rgba(26, 26, 46, 0.95);
+  --popover-foreground: #ffffff;
+  --primary: #00bcd4;
+  --primary-foreground: #ffffff;
+  --secondary: #16213e;
+  --secondary-foreground: #ffffff;
+  --muted: #0f3460;
+  --muted-foreground: #a0a9c0;
+  --accent: #00e5ff;
+  --accent-foreground: #0a0a0f;
+  --destructive: #ff1744;
+  --destructive-foreground: #ffffff;
+  --border: #16213e;
+  --input: #1a1a2e;
+  --ring: rgba(0, 229, 255, 0.5);
+  /* Updated chart colors for quantum theme visualization */
+  --chart-1: #00bcd4;
+  --chart-2: #ff6b35;
+  --chart-3: #8b5cf6;
+  --chart-4: #ff1744;
+  --chart-5: #00e5ff;
+  --radius: 0.75rem;
+  --sidebar: #0a0a0f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00bcd4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #00e5ff;
+  --sidebar-accent-foreground: #0a0a0f;
+  --sidebar-border: #16213e;
+  --sidebar-ring: rgba(0, 229, 255, 0.5);
 }
 
 .dark {
-  --background: #0d1b2a;
-  --foreground: #f8f9fa;
-  --card: #1a2332;
-  --card-foreground: #f8f9fa;
-  --popover: #1a2332;
-  --popover-foreground: #f8f9fa;
-  --primary: #f8f9fa;
-  --primary-foreground: #0d1b2a;
-  --secondary: #06d6a0;
-  --secondary-foreground: #0d1b2a;
-  --muted: #495057;
-  --muted-foreground: #adb5bd;
-  --accent: #7b2cbf;
-  --accent-foreground: #f8f9fa;
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: #495057;
-  --input: #495057;
-  --ring: #7b2cbf;
-  --chart-1: #f8f9fa;
-  --chart-2: #7b2cbf;
-  --chart-3: #06d6a0;
-  --chart-4: #adb5bd;
-  --chart-5: #6c757d;
-  --radius: 0.625rem;
-  --sidebar: #0d1b2a;
-  --sidebar-foreground: #f8f9fa;
-  --sidebar-primary: #7b2cbf;
-  --sidebar-primary-foreground: #f8f9fa;
-  --sidebar-accent: #495057;
-  --sidebar-accent-foreground: #f8f9fa;
-  --sidebar-border: #495057;
-  --sidebar-ring: #7b2cbf;
+  /* Enhanced dark mode for deeper quantum realm immersion */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0f0f23;
+  --card-foreground: #ffffff;
+  --popover: rgba(15, 15, 35, 0.98);
+  --popover-foreground: #ffffff;
+  --primary: #00e5ff;
+  --primary-foreground: #000000;
+  --secondary: #0a1929;
+  --secondary-foreground: #ffffff;
+  --muted: #1a237e;
+  --muted-foreground: #90caf9;
+  --accent: #00bcd4;
+  --accent-foreground: #000000;
+  --destructive: #ff1744;
+  --destructive-foreground: #ffffff;
+  --border: #0a1929;
+  --input: #0f0f23;
+  --ring: rgba(0, 188, 212, 0.6);
+  /* Enhanced dark mode chart colors with quantum glow */
+  --chart-1: #00e5ff;
+  --chart-2: #ff6b35;
+  --chart-3: #9c27b0;
+  --chart-4: #ff1744;
+  --chart-5: #00bcd4;
+  --radius: 0.75rem;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00e5ff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #00bcd4;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #0a1929;
+  --sidebar-ring: rgba(0, 188, 212, 0.6);
 }
 
 @theme inline {
@@ -122,32 +126,41 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    /* Added quantum realm background with subtle particle effect */
+    background-image: radial-gradient(circle at 20% 80%, rgba(0, 188, 212, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(0, 229, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
   }
 }
 
 @layer components {
+  /* Enhanced leaflet styles for quantum theme */
   .leaflet-container {
-    @apply rounded-lg border border-border;
+    @apply rounded-lg border border-border backdrop-blur-sm;
+    background: rgba(26, 26, 46, 0.8);
   }
 
   .leaflet-popup-content-wrapper {
-    @apply bg-card text-card-foreground rounded-md shadow-lg;
+    @apply bg-card/90 text-card-foreground rounded-md shadow-lg backdrop-blur-md;
+    border: 1px solid rgba(0, 188, 212, 0.3);
   }
 
   .leaflet-popup-tip {
-    @apply bg-card;
+    @apply bg-card/90;
   }
 
   .leaflet-control-zoom a {
-    @apply bg-card text-card-foreground border-border hover:bg-muted;
+    @apply bg-card/80 text-card-foreground border-border hover:bg-muted backdrop-blur-sm;
+    border: 1px solid rgba(0, 188, 212, 0.2);
   }
 
   .leaflet-control-attribution {
-    @apply bg-card/80 text-muted-foreground text-xs;
+    @apply bg-card/60 text-muted-foreground text-xs backdrop-blur-sm;
   }
 }
 
 @layer utilities {
+  /* Enhanced quantum animations and effects */
   .pulse-quantum {
     animation: pulse-quantum 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -157,10 +170,12 @@
     100% {
       opacity: 1;
       transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7);
     }
     50% {
-      opacity: 0.7;
+      opacity: 0.8;
       transform: scale(1.05);
+      box-shadow: 0 0 0 10px rgba(0, 229, 255, 0);
     }
   }
 
@@ -169,6 +184,55 @@
   }
 
   .depot-highlight {
-    box-shadow: 0 0 0 3px rgb(123 44 191 / 0.3);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.3);
+    animation: quantum-glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes quantum-glow {
+    from {
+      box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.3);
+    }
+    to {
+      box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.8), 0 0 30px rgba(0, 188, 212, 0.5);
+    }
+  }
+
+  .quantum-border {
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.1);
+  }
+
+  .quantum-glow {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  }
+
+  .particle-bg {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .particle-bg::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(2px 2px at 20px 30px, rgba(0, 229, 255, 0.3), transparent),
+      radial-gradient(2px 2px at 40px 70px, rgba(0, 188, 212, 0.2), transparent),
+      radial-gradient(1px 1px at 90px 40px, rgba(139, 92, 246, 0.3), transparent);
+    background-repeat: repeat;
+    background-size: 100px 100px;
+    animation: particle-float 20s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes particle-float {
+    0% {
+      transform: translate(0, 0);
+    }
+    100% {
+      transform: translate(-100px, -100px);
+    }
   }
 }
