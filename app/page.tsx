@@ -5,6 +5,7 @@ import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch
 import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
+import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 
 export default function HomePage() {
   return (
@@ -250,6 +251,20 @@ export default function HomePage() {
           </div>
 
           <EfficiencyComparison />
+        </div>
+      </section>
+
+      {/* Environmental Impact Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Environmental Impact & Sustainability</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Discover how quantum optimization reduces carbon footprint and drives sustainable logistics operations
+            </p>
+          </div>
+
+          <CarbonFootprintCalculator routes={[]} selectedRoute={null} />
         </div>
       </section>
 
