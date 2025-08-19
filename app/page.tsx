@@ -350,6 +350,34 @@ export default function HomePage() {
               Optimizing delivery routes at quantum speed
             </p>
           </div>
+
+          {/* Developer Credits Section */}
+          <div className="mt-8 pt-8 border-t border-border/50">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                Developed by <span className="font-semibold text-foreground">V C Premchand Yadav</span>
+              </p>
+              <div className="flex justify-center items-center gap-4">
+                <a
+                  href="https://www.linkedin.com/in/premchand-yadav-a785691a2/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent hover:text-accent/80 transition-colors"
+                >
+                  LinkedIn Profile
+                </a>
+                <span className="text-muted-foreground">•</span>
+                <a
+                  href="https://github.com/Premchandyadav369"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent hover:text-accent/80 transition-colors"
+                >
+                  GitHub Profile
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
