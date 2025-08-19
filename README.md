@@ -142,6 +142,7 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
 -   **P R Kiran Kumar Reddy** – Operations & Optimization 🚀
 -   **Edupulapati Sai Praneeth** – Algorithms & Backend 🔧
 -   **Liel Stephen** – UI/UX & Frontend Magic 🎨
+-   **Sanjana Pasam** – UI/UX & Frontend Magic 🎨
 
 ---
 
