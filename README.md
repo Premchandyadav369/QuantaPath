@@ -1,13 +1,8 @@
 <div align="center">
-
- __      __    _      ___  ___   ____   _      _   _   ____
- \ \    / /   / \    |   \/   | |  _ \ | |    | | | | / __ \
-  \ \  / /   / _ \   | |\  /| | | |_) || |    | | | | | |  | |
-   \ \/ /   / ___ \  | | \/ | | |  __/ | |    | |_| | | |__| |
-    \__/   /_/   \_\ |_|    |_| |_|    |_|    |_____| \____/
-
+  <img src="https://i.postimg.cc/d7q4X7H8/Quanta-Path-Logo.png" alt="QuantaPath Logo" width="600"/>
 </div>
-<h3 align="center">Discover the Future in Every Superposition.</h3>
+
+<h3 align="center">Unlocking Infinite Paths with Quantum Power.</h3>
 
 <p align="center">
   <a href="https://v0-quanta-path-setup.vercel.app/">
@@ -28,7 +23,7 @@
 </p>
 
 <h3 align="center">
-  <a href="https://v0-quanta-path-setup.vercel.app/"><strong>👉 Live Demo</strong></a>
+  <a href="https://v0-quanta-path-setup.vercel.app/"><strong>👉Live Demo to QuantaPath</strong></a>
 </h3>
 
 ---
