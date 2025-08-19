@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -103,6 +103,38 @@ export function InteractiveMap() {
     },
   })
 
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const configParam = urlParams.get("config")
+
+      if (configParam) {
+        const decodedConfig = JSON.parse(atob(configParam))
+
+        if (decodedConfig.stops && Array.isArray(decodedConfig.stops)) {
+          const stopsFromConfig: DeliveryStop[] = decodedConfig.stops.map((stop, index) => ({
+            id: stop.isDepot ? "depot" : `stop${Date.now()}${index}`,
+            name: stop.name,
+            lat: stop.lat,
+            lng: stop.lng,
+            isDepot: stop.isDepot || false,
+          }))
+          setStops(stopsFromConfig)
+        }
+
+        if (decodedConfig.quantum) {
+          setQuantumParams(decodedConfig.quantum)
+        }
+
+        if (decodedConfig.classical) {
+          setClassicalParams(decodedConfig.classical)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to parse configuration from URL:", error)
+    }
+  }, [])
+
   const handleMapClick = useCallback(
     (lat: number, lng: number) => {
       if (isOptimizing) return
@@ -140,7 +172,7 @@ export function InteractiveMap() {
   const removeStop = useCallback(
     (id: string) => {
       if (isOptimizing) return
-      setStops((prev) => prev.filter((stop) => stop.id !== id && !stop.isDepot))
+      setStops((prev) => prev.filter((stop) => stop.id !== id))
       setError(null)
     },
     [isOptimizing],
@@ -596,3 +628,4 @@ export function InteractiveMap() {
     </div>
   )
 }
+
