@@ -25,6 +25,12 @@ export class ClassicalService {
       results.push(saResult)
     }
 
+    // Run Christofides if requested
+    if (params.christofides) {
+      const christofidesResult = await this.christofides(distanceMatrix)
+      results.push(christofidesResult)
+    }
+
     // If no specific algorithms requested, run default (NN + 2-opt)
     if (results.length === 0) {
       const defaultResult = await this.nearestNeighborWith2Opt(distanceMatrix)

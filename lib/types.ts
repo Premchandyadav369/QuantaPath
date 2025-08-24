@@ -7,10 +7,6 @@ export interface DeliveryStop {
   y?: number // Legacy support for SVG coordinates
   isDepot?: boolean
   priority?: number
-  timeWindow?: {
-    start: string
-    end: string
-  }
 }
 
 export interface OptimizationRequest {
@@ -33,6 +29,7 @@ export interface OptimizationRequest {
     twoOpt: boolean
     anneal: boolean
     ortools: boolean
+    christofides: boolean
     simulatedAnnealingParams?: {
       initialTemp: number
       coolingRate: number

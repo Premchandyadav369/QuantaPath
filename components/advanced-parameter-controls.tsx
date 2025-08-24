@@ -28,6 +28,7 @@ interface ClassicalParams {
   twoOpt: boolean
   anneal: boolean
   ortools: boolean
+  christofides: boolean
   simulatedAnnealingParams: {
     initialTemp: number
     coolingRate: number
@@ -38,22 +39,26 @@ interface ClassicalParams {
 interface AdvancedParameterControlsProps {
   quantumParams: QuantumParams
   classicalParams: ClassicalParams
+  stopsCount: number
   onQuantumParamsChange: (params: QuantumParams) => void
   onClassicalParamsChange: (params: ClassicalParams) => void
   onReset: () => void
   onExport: () => void
   onShare: () => void
+  onRunQiskit: () => void
   isOptimizing: boolean
 }
 
 export function AdvancedParameterControls({
   quantumParams,
   classicalParams,
+  stopsCount,
   onQuantumParamsChange,
   onClassicalParamsChange,
   onReset,
   onExport,
   onShare,
+  onRunQiskit,
   isOptimizing,
 }: AdvancedParameterControlsProps) {
   const [activeTab, setActiveTab] = useState("quantum")
@@ -93,6 +98,7 @@ export function AdvancedParameterControls({
       twoOpt: true,
       anneal: true,
       ortools: false,
+      christofides: false,
       simulatedAnnealingParams: {
         initialTemp: 100,
         coolingRate: 0.995,
@@ -293,6 +299,38 @@ export function AdvancedParameterControls({
                         Higher penalties enforce constraints more strictly
                       </p>
                     </div>
+
+                    <Separator />
+
+                    <div className="space-y-2 pt-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-full">
+                            <Button
+                              variant="outline"
+                              className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
+                              onClick={onRunQiskit}
+                              disabled={isOptimizing || stopsCount > 7}
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              Run with Real Qiskit Solver
+                            </Button>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {stopsCount > 7 ? (
+                            <p>Qiskit solver is disabled for more than 7 stops.</p>
+                          ) : (
+                            <p>Uses a real Qiskit backend (slow). Provides a more accurate quantum result.</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                       <p className="text-xs text-muted-foreground text-center">
+                        This may take several minutes to complete.
+                      </p>
+                    </div>
+
+
                   </>
                 )}
               </div>
@@ -312,6 +350,17 @@ export function AdvancedParameterControls({
                         id="nn-algo"
                         checked={classicalParams.nn}
                         onCheckedChange={(checked) => updateClassicalParam("nn", checked)}
+                        disabled={isOptimizing}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="christofides-algo" className="text-sm">
+                        Christofides (Approx)
+                      </Label>
+                      <Switch
+                        id="christofides-algo"
+                        checked={classicalParams.christofides}
+                        onCheckedChange={(checked) => updateClassicalParam("christofides", checked)}
                         disabled={isOptimizing}
                       />
                     </div>
