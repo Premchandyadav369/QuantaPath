@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
 import {
   MapPin,
   Plus,
@@ -18,6 +19,7 @@ import {
   CheckCircle2,
   Download,
   Share2,
+  Search,
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
@@ -37,6 +39,10 @@ export function InteractiveMap() {
   ])
 
   const [isDepotMode, setIsDepotMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  const mapRef = useRef<any>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
     {
@@ -331,6 +337,58 @@ export function InteractiveMap() {
     }
   }, [stops, quantumParams, classicalParams])
 
+  const handleSearch = async () => {
+    if (!searchQuery) return;
+    setSearchError(null);
+    setSearchedLocation(null);
+
+    try {
+      const response = await fetch(`/api/geocode?query=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch geocode data");
+      }
+      const data = await response.json();
+      if (data.features && data.features.length > 0) {
+        const bestResult = data.features[0];
+        const [lng, lat] = bestResult.geometry.coordinates;
+        const name = bestResult.properties.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+        setSearchedLocation({ lat, lng, name });
+
+        if (mapRef.current) {
+          mapRef.current.setView([lat, lng], 13);
+        }
+      } else {
+        setSearchError("Location not found.");
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      setSearchError("Failed to search for location.");
+    }
+  };
+
+  const addSearchedLocationAsStop = () => {
+    if (!searchedLocation) return;
+    const newStop: DeliveryStop = {
+      id: `stop${Date.now()}`,
+      name: searchedLocation.name,
+      lat: searchedLocation.lat,
+      lng: searchedLocation.lng,
+    };
+    setStops((prev) => [...prev, newStop]);
+    setSearchedLocation(null);
+    setSearchQuery("");
+  };
+
+  const addSearchedLocationAsDepot = () => {
+    if (!searchedLocation) return;
+    setStops((prev) =>
+      prev.map((stop) => stop.isDepot ? { ...stop, lat: searchedLocation.lat, lng: searchedLocation.lng, name: searchedLocation.name } : stop)
+    );
+    setSearchedLocation(null);
+    setSearchQuery("");
+  };
+
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
@@ -379,6 +437,38 @@ export function InteractiveMap() {
               </p>
             </CardHeader>
             <CardContent>
+              <div className="flex gap-2 mb-4">
+                <Input
+                  type="text"
+                  placeholder="Search for a town or address..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={isOptimizing}>
+                  <Search className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {searchError && !searchedLocation && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">{searchError}</span>
+                </div>
+              )}
+
+              {searchedLocation && (
+                <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm text-primary font-medium">Found: {searchedLocation.name}</p>
+                    <p className="text-xs text-primary/80">Add this location to your route.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={addSearchedLocationAsStop}>Add Stop</Button>
+                    <Button size="sm" variant="outline" onClick={addSearchedLocationAsDepot}>Set Depot</Button>
+                  </div>
+                </div>
+              )}
               {/* Error Display */}
               {error && (
                 <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
@@ -416,6 +506,8 @@ export function InteractiveMap() {
                   onStopRemove={removeStop}
                   isOptimizing={isOptimizing}
                   isDepotMode={isDepotMode}
+                  onMapReady={(map) => (mapRef.current = map)}
+                  searchedLocation={searchedLocation}
                 />
 
                 {/* Map Controls */}
@@ -628,4 +720,3 @@ export function InteractiveMap() {
     </div>
   )
 }
-
