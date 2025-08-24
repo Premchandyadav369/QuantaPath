@@ -1,4 +1,7 @@
-import type { RouteResult, OptimizationRequest } from "@/lib/types"
+import type { RouteResult, OptimizationRequest, DistanceMatrix, DeliveryStop } from "@/lib/types"
+
+const TIME_WINDOW_PENALTY = 10000; // Large penalty for violating a time window
+const SERVICE_TIME_MINUTES = 15; // Assume 15 minutes service time at each stop
 
 export class ClassicalService {
   private static instance: ClassicalService
@@ -10,67 +13,120 @@ export class ClassicalService {
     return ClassicalService.instance
   }
 
-  async solveClassical(distanceMatrix: number[][], params: OptimizationRequest["classical"]): Promise<RouteResult[]> {
+  async solveClassical(matrix: DistanceMatrix, params: OptimizationRequest["classical"], stops: DeliveryStop[]): Promise<RouteResult[]> {
     const results: RouteResult[] = []
 
     // Run Nearest Neighbor + 2-opt if requested
     if (params.nn || params.twoOpt) {
-      const nnResult = await this.nearestNeighborWith2Opt(distanceMatrix)
+      const nnResult = await this.nearestNeighborWith2Opt(matrix, stops)
       results.push(nnResult)
     }
 
     // Run Simulated Annealing if requested
     if (params.anneal) {
-      const saResult = await this.simulatedAnnealing(distanceMatrix)
+      const saResult = await this.simulatedAnnealing(matrix, stops)
       results.push(saResult)
+    }
+
+    // Run Christofides if requested
+    if (params.christofides) {
+      const christofidesResult = await this.christofides(matrix.distances)
+      results.push(christofidesResult)
     }
 
     // If no specific algorithms requested, run default (NN + 2-opt)
     if (results.length === 0) {
-      const defaultResult = await this.nearestNeighborWith2Opt(distanceMatrix)
+      const defaultResult = await this.nearestNeighborWith2Opt(matrix, stops)
       results.push(defaultResult)
     }
 
     return results
   }
 
-  private async nearestNeighborWith2Opt(distanceMatrix: number[][]): Promise<RouteResult> {
+  private parseTimeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private calculateTourCost(tour: number[], matrix: DistanceMatrix, stops: DeliveryStop[]): { cost: number, length: number, duration: number, timeWindowViolations: number } {
+    let length = 0;
+    let duration = 0;
+    let timeWindowViolations = 0;
+    let currentTime = 0; // Start at time 0
+
+    const hasTimeWindows = stops.some(s => s.timeWindow);
+
+    for (let i = 0; i < tour.length - 1; i++) {
+      const from = tour[i];
+      const to = tour[i + 1];
+      length += matrix.distances[from][to];
+
+      const travelTime = matrix.durations?.[from]?.[to] || (matrix.distances[from][to] * 2);
+      duration += travelTime;
+
+      if (hasTimeWindows) {
+        currentTime += travelTime;
+        const stopInfo = stops[to];
+        if (stopInfo.timeWindow) {
+          const start = this.parseTimeToMinutes(stopInfo.timeWindow.start);
+          const end = this.parseTimeToMinutes(stopInfo.timeWindow.end);
+          if (currentTime < start) {
+            // Wait until the time window opens
+            currentTime = start;
+          } else if (currentTime > end) {
+            timeWindowViolations++;
+          }
+        }
+        // Add service time for the stop
+        if(i < tour.length - 2) { // No service time at the end depot
+            currentTime += SERVICE_TIME_MINUTES;
+            duration += SERVICE_TIME_MINUTES;
+        }
+      }
+    }
+
+    const cost = length + timeWindowViolations * TIME_WINDOW_PENALTY;
+    return { cost, length, duration, timeWindowViolations };
+  }
+
+  private async nearestNeighborWith2Opt(matrix: DistanceMatrix, stops: DeliveryStop[]): Promise<RouteResult> {
     const startTime = Date.now()
-    const n = distanceMatrix.length
+    const n = matrix.distances.length
 
     // Phase 1: Nearest Neighbor construction
-    let tour = this.nearestNeighborConstruction(distanceMatrix)
+    let tour = this.nearestNeighborConstruction(matrix.distances)
 
     // Phase 2: 2-opt improvement
-    tour = this.twoOptImprovement(tour, distanceMatrix)
+    tour = this.twoOptImprovement(tour, matrix.distances)
 
-    const length = this.calculateTourLength(tour, distanceMatrix)
+    const cost = this.calculateTourCost(tour, matrix, stops);
     const runtimeMs = Date.now() - startTime
 
     return {
       solver: "classical",
       name: "Nearest Neighbor + 2-opt",
       tour,
-      length: Math.round(length * 100) / 100,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
+      length: Math.round(cost.length * 100) / 100,
+      timeMinutes: Math.round(cost.duration * 100) / 100,
+      feasible: cost.timeWindowViolations === 0,
+      violations: { pos: 0, city: 0, timeWindow: cost.timeWindowViolations },
       runtimeMs,
     }
   }
 
-  private async simulatedAnnealing(distanceMatrix: number[][]): Promise<RouteResult> {
+  private async simulatedAnnealing(matrix: DistanceMatrix, stops: DeliveryStop[]): Promise<RouteResult> {
     const startTime = Date.now()
-    const n = distanceMatrix.length
+    const n = matrix.distances.length
 
     // Start with nearest neighbor solution
-    let currentTour = this.nearestNeighborConstruction(distanceMatrix)
-    let currentLength = this.calculateTourLength(currentTour, distanceMatrix)
+    let currentTour = this.nearestNeighborConstruction(matrix.distances)
+    let currentCost = this.calculateTourCost(currentTour, matrix, stops)
 
     let bestTour = [...currentTour]
-    let bestLength = currentLength
+    let bestCost = currentCost
 
     // Simulated Annealing parameters
-    const initialTemp = this.calculateInitialTemperature(distanceMatrix)
+    const initialTemp = this.calculateInitialTemperature(matrix.distances)
     const finalTemp = 0.01
     const coolingRate = 0.995
     const maxIterationsPerTemp = Math.max(100, n * 10)
@@ -81,19 +137,19 @@ export class ClassicalService {
       for (let iter = 0; iter < maxIterationsPerTemp; iter++) {
         // Generate neighbor solution using 2-opt swap
         const neighborTour = this.generate2OptNeighbor(currentTour)
-        const neighborLength = this.calculateTourLength(neighborTour, distanceMatrix)
+        const neighborCost = this.calculateTourCost(neighborTour, matrix, stops)
 
         // Accept or reject the neighbor
-        const deltaE = neighborLength - currentLength
+        const deltaE = neighborCost.cost - currentCost.cost
 
         if (deltaE < 0 || Math.random() < Math.exp(-deltaE / temperature)) {
           currentTour = neighborTour
-          currentLength = neighborLength
+          currentCost = neighborCost
 
           // Update best solution if improved
-          if (currentLength < bestLength) {
+          if (currentCost.cost < bestCost.cost) {
             bestTour = [...currentTour]
-            bestLength = currentLength
+            bestCost = currentCost
           }
         }
       }
@@ -107,14 +163,15 @@ export class ClassicalService {
       solver: "classical",
       name: "Simulated Annealing",
       tour: bestTour,
-      length: Math.round(bestLength * 100) / 100,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
+      length: Math.round(bestCost.length * 100) / 100,
+      timeMinutes: Math.round(bestCost.duration * 100) / 100,
+      feasible: bestCost.timeWindowViolations === 0,
+      violations: { pos: 0, city: 0, timeWindow: bestCost.timeWindowViolations },
       runtimeMs,
     }
   }
 
-  private nearestNeighborConstruction(distanceMatrix: number[]): number[] {
+  private nearestNeighborConstruction(distanceMatrix: number[][]): number[] {
     const n = distanceMatrix.length
     const tour = [0] // Start from depot
     const visited = new Set([0])
@@ -224,7 +281,7 @@ export class ClassicalService {
 
   async christofides(distanceMatrix: number[][]): Promise<RouteResult> {
     const startTime = Date.now()
-
+    const hasTimeWindows = false; // Simplified for now
     // Simplified Christofides approximation (MST + matching heuristic)
     // For demo purposes, we'll use a greedy approximation
     const tour = await this.greedyChristofides(distanceMatrix)
@@ -236,9 +293,10 @@ export class ClassicalService {
       name: "Christofides (approx)",
       tour,
       length: Math.round(length * 100) / 100,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
+      feasible: true, // Assuming no time windows for this solver
+      violations: { pos: 0, city: 0, timeWindow: 0 },
       runtimeMs,
+      timeWindowUnsupported: true,
     }
   }
 

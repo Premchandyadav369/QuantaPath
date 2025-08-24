@@ -91,6 +91,19 @@ export function InteractiveMap() {
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
 
+  const handleTimeWindowChange = (stopId: string, part: "start" | "end", value: string) => {
+    setStops(stops.map(s => s.id === stopId ? {
+      ...s,
+      timeWindow: {
+        start: part === 'start' ? value : (s.timeWindow?.start || "00:00"),
+        end: part === 'end' ? value : (s.timeWindow?.end || "23:59"),
+      }
+    } : s));
+  };
+
+  const [isQiskitOptimizing, setIsQiskitOptimizing] = useState(false)
+  const [qiskitError, setQiskitError] = useState<string | null>(null)
+
   const [quantumParams, setQuantumParams] = useState({
     use: true,
     p: 2,
@@ -105,6 +118,7 @@ export function InteractiveMap() {
     twoOpt: true,
     anneal: true,
     ortools: false,
+    christofides: false,
     simulatedAnnealingParams: {
       initialTemp: 100,
       coolingRate: 0.995,
@@ -349,7 +363,59 @@ export function InteractiveMap() {
       navigator.clipboard.writeText(shareUrl)
       // Could show a toast notification here
     }
-  }, [stops, quantumParams, classicalParams])
+  }, [stops, quantumParams, classicalParams]);
+
+  const runQiskitOptimization = useCallback(async () => {
+    if (stops.length < 3) {
+      setError("Please add at least 2 delivery stops to optimize routes");
+      return;
+    }
+    if (stops.length > 7) {
+      setError("For the Qiskit solver demo, please use a maximum of 7 stops.");
+      return;
+    }
+
+    setIsQiskitOptimizing(true);
+    setQiskitError(null);
+    setError(null);
+
+    try {
+      const request: OptimizationRequest = {
+        stops,
+        optimizeFor: "distance",
+        distanceSource: "openrouteservice",
+        quantum: quantumParams,
+        classical: classicalParams,
+        seed: 42,
+      };
+
+      const response = await fetch('/api/qiskit-optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Qiskit solver failed");
+      }
+
+      const result: RouteResult = await response.json();
+
+      setRoutes((prevRoutes) => {
+        // Remove previous qiskit result if it exists, then add the new one
+        const otherRoutes = prevRoutes.filter(r => !r.name.includes('Qiskit'));
+        return [...otherRoutes, result];
+      });
+      setSelectedRoute(result);
+
+    } catch (error) {
+      console.error("Qiskit optimization failed:", error);
+      setQiskitError(error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
+      setIsQiskitOptimizing(false);
+    }
+  }, [stops, quantumParams, classicalParams]);
 
   const handleSearch = async () => {
     if (!searchQuery) return;
@@ -511,6 +577,22 @@ export function InteractiveMap() {
                 </div>
               )}
 
+              {qiskitError && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">{qiskitError}</span>
+                </div>
+              )}
+
+              {isQiskitOptimizing && (
+                <div className="mb-4 p-3 bg-accent/10 border border-accent/20 rounded-lg flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-accent" />
+                  <span className="text-sm text-accent font-medium">
+                    Running on Qiskit... This may take a few minutes.
+                  </span>
+                </div>
+              )}
+
               {isDepotMode && (
                 <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
@@ -577,25 +659,45 @@ export function InteractiveMap() {
             </CardHeader>
             <CardContent className="space-y-3">
               {stops.map((stop) => (
-                <div key={stop.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{stop.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
-                      </span>
+                <div key={stop.id} className="p-2 rounded-lg border border-transparent hover:border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{stop.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                        </span>
+                      </div>
+                      {stop.isDepot && (
+                        <Badge variant="secondary" className="text-xs">
+                          Depot
+                        </Badge>
+                      )}
                     </div>
-                    {stop.isDepot && (
-                      <Badge variant="secondary" className="text-xs">
-                        Depot
-                      </Badge>
+                    {!stop.isDepot && (
+                      <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing || isQiskitOptimizing}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
                   {!stop.isDepot && (
-                    <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Label className="text-xs">TW:</Label>
+                      <Input
+                        type="time"
+                        className="h-7 text-xs w-24"
+                        value={stop.timeWindow?.start || ""}
+                        onChange={(e) => handleTimeWindowChange(stop.id, "start", e.target.value)}
+                      />
+                      <span className="text-xs">-</span>
+                       <Input
+                        type="time"
+                        className="h-7 text-xs w-24"
+                        value={stop.timeWindow?.end || ""}
+                        onChange={(e) => handleTimeWindowChange(stop.id, "end", e.target.value)}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
@@ -610,25 +712,27 @@ export function InteractiveMap() {
           <AdvancedParameterControls
             quantumParams={quantumParams}
             classicalParams={classicalParams}
+            stopsCount={stops.length}
             onQuantumParamsChange={setQuantumParams}
             onClassicalParamsChange={setClassicalParams}
             onReset={clearStops}
             onExport={exportResults}
             onShare={shareConfiguration}
-            isOptimizing={isOptimizing}
+            onRunQiskit={runQiskitOptimization}
+            isOptimizing={isOptimizing || isQiskitOptimizing}
           />
 
           {/* Optimization Button */}
-          <Button onClick={optimizeRoutes} disabled={stops.length < 3 || isOptimizing} className="w-full" size="lg">
+          <Button onClick={optimizeRoutes} disabled={stops.length < 3 || isOptimizing || isQiskitOptimizing} className="w-full" size="lg">
             {isOptimizing ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Optimizing...
+                Optimizing Simulation...
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                Run Optimization
+                Run Simulation
               </>
             )}
           </Button>
@@ -675,6 +779,14 @@ export function InteractiveMap() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
+                        {route.timeWindowUnsupported && (
+                           <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="outline" className="text-xs text-muted-foreground">TW N/A</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Time windows not supported by this solver.</TooltipContent>
+                            </Tooltip>
+                        )}
                         <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
                           {route.feasible ? "Valid" : "Invalid"}
                         </Badge>
@@ -693,12 +805,15 @@ export function InteractiveMap() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pl-5">
-                      <div>Distance: {route.length.toFixed(1)} km</div>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground pl-5">
+                      <div>Dist: {route.length.toFixed(1)} km</div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {route.runtimeMs}ms
+                        {route.timeMinutes ? `${route.timeMinutes.toFixed(0)} min` : `${route.runtimeMs}ms`}
                       </div>
+                       {route.violations.timeWindow > 0 && (
+                        <div className="text-destructive">TWV: {route.violations.timeWindow}</div>
+                      )}
                     </div>
                   </div>
                 ))}

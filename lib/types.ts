@@ -33,6 +33,7 @@ export interface OptimizationRequest {
     twoOpt: boolean
     anneal: boolean
     ortools: boolean
+    christofides: boolean
     simulatedAnnealingParams?: {
       initialTemp: number
       coolingRate: number
@@ -52,9 +53,11 @@ export interface RouteResult {
   violations: {
     pos: number
     city: number
+    timeWindow?: number
   }
   runtimeMs: number
   parameters?: Record<string, any>
+  timeWindowUnsupported?: boolean
 }
 
 export interface OptimizationResponse {
