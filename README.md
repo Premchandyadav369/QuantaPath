@@ -141,7 +141,7 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
 -   **V C Premchand Yadav** – Founder & Quantum Architect ⚛️
 -   **P R Kiran Kumar Reddy** – Operations & Optimization 🚀
 -   **Edupulapati Sai Praneeth** – Algorithms & Backend 🔧
--   **Liel Stephen** – UI/UX & Frontend Magic 🎨
+-   **Vyshwaran P** – Full Stack Developer
 -   **Sanjana Pasam** – UI/UX & Frontend Magic 🎨
 
 ---
