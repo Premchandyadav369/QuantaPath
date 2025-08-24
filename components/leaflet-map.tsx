@@ -164,7 +164,7 @@ export function LeafletMap({
       const group = new L.featureGroup(markersRef.current)
       map.fitBounds(group.getBounds().pad(0.1))
     }
-  }, [stops, isLoaded, onStopRemove, isOptimizing, isDepotMode]) // Added isDepotMode dependency
+  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode])
 
   // Effect to show searched location marker
   useEffect(() => {

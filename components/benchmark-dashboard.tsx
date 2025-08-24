@@ -1,12 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { BarChart3, TrendingUp, Clock, Zap, Download, RefreshCw, Target, Award, Activity } from "lucide-react"
+import {
+  ResponsiveContainer,
+  BarChart,
+  LineChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Bar,
+  Line,
+  Cell,
+} from "recharts"
 
 interface BenchmarkResult {
   id: string
@@ -31,6 +44,12 @@ interface PerformanceMetrics {
   classicalSuccessRate: number
   avgQuantumAdvantage: number
   totalBenchmarks: number
+}
+
+const COLORS = {
+  quantum: "#7B2CBF",
+  classical: "#06D6A0",
+  advantage: "#FFC300",
 }
 
 export function BenchmarkDashboard() {
@@ -137,17 +156,34 @@ export function BenchmarkDashboard() {
     ]
 
     setBenchmarkResults(mockResults)
+  }, [])
+
+  useEffect(() => {
+    if (benchmarkResults.length === 0) return
 
     // Calculate metrics
-    const totalBenchmarks = mockResults.length
-    const quantumResults = mockResults.flatMap((r) => r.algorithms.filter((a) => a.solver === "quantum"))
-    const classicalResults = mockResults.flatMap((r) => r.algorithms.filter((a) => a.solver === "classical"))
+    const totalBenchmarks = benchmarkResults.length
+    const quantumResults = benchmarkResults.flatMap((r) => r.algorithms.filter((a) => a.solver === "quantum"))
+    const classicalResults = benchmarkResults.flatMap((r) => r.algorithms.filter((a) => a.solver === "classical"))
 
-    const avgQuantumRuntime = quantumResults.reduce((sum, r) => sum + r.runtime, 0) / quantumResults.length
-    const avgClassicalRuntime = classicalResults.reduce((sum, r) => sum + r.runtime, 0) / classicalResults.length
-    const quantumSuccessRate = (quantumResults.filter((r) => r.feasible).length / quantumResults.length) * 100
-    const classicalSuccessRate = (classicalResults.filter((r) => r.feasible).length / classicalResults.length) * 100
-    const avgQuantumAdvantage = mockResults.reduce((sum, r) => sum + (r.quantumAdvantage || 0), 0) / totalBenchmarks
+    const avgQuantumRuntime =
+      quantumResults.length > 0 ? quantumResults.reduce((sum, r) => sum + r.runtime, 0) / quantumResults.length : 0
+    const avgClassicalRuntime =
+      classicalResults.length > 0
+        ? classicalResults.reduce((sum, r) => sum + r.runtime, 0) / classicalResults.length
+        : 0
+    const quantumSuccessRate =
+      quantumResults.length > 0
+        ? (quantumResults.filter((r) => r.feasible).length / quantumResults.length) * 100
+        : 0
+    const classicalSuccessRate =
+      classicalResults.length > 0
+        ? (classicalResults.filter((r) => r.feasible).length / classicalResults.length) * 100
+        : 0
+    const avgQuantumAdvantage =
+      benchmarkResults.length > 0
+        ? benchmarkResults.reduce((sum, r) => sum + (r.quantumAdvantage || 0), 0) / totalBenchmarks
+        : 0
 
     setMetrics({
       avgQuantumRuntime,
@@ -157,7 +193,23 @@ export function BenchmarkDashboard() {
       avgQuantumAdvantage,
       totalBenchmarks,
     })
-  }, [])
+  }, [benchmarkResults])
+
+  const chartData = useMemo(() => {
+    return benchmarkResults
+      .map((result) => {
+        const dataPoint: any = {
+          name: `${result.problemSize} stops`,
+          problemSize: result.problemSize,
+        }
+        result.algorithms.forEach((algo) => {
+          dataPoint[algo.name] = algo.tourLength
+          dataPoint[`${algo.name}_runtime`] = algo.runtime
+        })
+        return dataPoint
+      })
+      .sort((a, b) => a.problemSize - b.problemSize)
+  }, [benchmarkResults])
 
   const runBenchmarkSuite = async () => {
     setIsRunningBenchmark(true)
@@ -364,32 +416,56 @@ export function BenchmarkDashboard() {
                 <CardTitle>Runtime vs Problem Size</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Performance chart visualization</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Shows exponential scaling for quantum vs linear for classical
-                    </p>
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis yAxisId="left" label={{ value: "Runtime (ms)", angle: -90, position: "insideLeft" }} />
+                    <Tooltip
+                      formatter={(value, name) => [
+                        `${(name as string).includes("runtime") ? `${value}ms` : value}`,
+                        (name as string).replace("_runtime", ""),
+                      ]}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="QAOA p=2_runtime"
+                      stroke={COLORS.quantum}
+                      strokeWidth={2}
+                      name="QAOA p=2"
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="Nearest Neighbor + 2-opt_runtime"
+                      stroke={COLORS.classical}
+                      strokeWidth={2}
+                      name="NN + 2-opt"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Solution Quality Distribution</CardTitle>
+                <CardTitle>Solution Quality (Tour Length)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Quality distribution chart</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Quantum solutions tend to be 5-10% better on average
-                    </p>
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis label={{ value: "Distance (km)", angle: -90, position: "insideLeft" }} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="QAOA p=2" fill={COLORS.quantum} name="QAOA p=2" />
+                    <Bar dataKey="Nearest Neighbor + 2-opt" fill={COLORS.classical} name="NN + 2-opt" />
+                    <Bar dataKey="Simulated Annealing" fill={COLORS.advantage} name="Simulated Annealing" />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
