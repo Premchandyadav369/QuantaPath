@@ -6,6 +6,7 @@ import type { DeliveryStop, RouteResult } from "@/lib/types"
 interface LeafletMapProps {
   stops: DeliveryStop[]
   routes: RouteResult[]
+  stopsForRoutes: DeliveryStop[]
   selectedRoute: RouteResult | null
   onMapClick: (lat: number, lng: number) => void
   onStopRemove: (id: string) => void
@@ -19,6 +20,7 @@ interface LeafletMapProps {
 export function LeafletMap({
   stops,
   routes,
+  stopsForRoutes,
   selectedRoute,
   onMapClick,
   onStopRemove,
@@ -215,7 +217,7 @@ export function LeafletMap({
         // Draw non-selected routes as straight lines
         const routeCoords = route.tour
           .map((stopIndex) => {
-            const stop = stops[stopIndex];
+            const stop = stopsForRoutes[stopIndex];
             return stop ? [stop.lat, stop.lng] : null;
           })
           .filter(Boolean);
@@ -235,8 +237,8 @@ export function LeafletMap({
 
       // For selected route, fetch and draw the real road path
       for (let i = 0; i < route.tour.length - 1; i++) {
-        const startStop = stops[route.tour[i]];
-        const endStop = stops[route.tour[i + 1]];
+        const startStop = stopsForRoutes[route.tour[i]];
+        const endStop = stopsForRoutes[route.tour[i + 1]];
 
         if (!startStop || !endStop) continue;
 
@@ -303,7 +305,7 @@ export function LeafletMap({
       if (!route.feasible || route.tour.length === 0) return;
       fetchAndDrawRoute(route);
     });
-  }, [routes, selectedRoute, stops, isLoaded]);
+  }, [routes, selectedRoute, stopsForRoutes, isLoaded]);
 
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
