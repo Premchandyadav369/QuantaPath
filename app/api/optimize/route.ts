@@ -39,12 +39,12 @@ export async function POST(request: NextRequest) {
     // Run quantum solver if requested
     if (body.quantum.use) {
       const quantumService = QuantumService.getInstance()
-      const quantumResult = await quantumService.solveQAOA(matrix, body.quantum)
+      const quantumResult = await quantumService.solveQAOA(matrix.distances, body.quantum)
       candidates.push(quantumResult)
     }
 
     const classicalService = ClassicalService.getInstance()
-    const classicalResults = await classicalService.solveClassical(matrix, body.classical)
+    const classicalResults = await classicalService.solveClassical(matrix.distances, body.classical)
     candidates.push(...classicalResults)
 
     // Find best result

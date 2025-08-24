@@ -7,10 +7,6 @@ export interface DeliveryStop {
   y?: number // Legacy support for SVG coordinates
   isDepot?: boolean
   priority?: number
-  timeWindow?: {
-    start: string
-    end: string
-  }
 }
 
 export interface OptimizationRequest {
@@ -53,11 +49,9 @@ export interface RouteResult {
   violations: {
     pos: number
     city: number
-    timeWindow?: number
   }
   runtimeMs: number
   parameters?: Record<string, any>
-  timeWindowUnsupported?: boolean
 }
 
 export interface OptimizationResponse {

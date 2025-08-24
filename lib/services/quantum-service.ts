@@ -1,7 +1,4 @@
-import type { RouteResult, OptimizationRequest, DistanceMatrix, DeliveryStop } from "@/lib/types"
-
-const TIME_WINDOW_PENALTY = 10000; // Large penalty for violating a time window
-const SERVICE_TIME_MINUTES = 15; // Assume 15 minutes service time at each stop
+import type { RouteResult, OptimizationRequest } from "@/lib/types"
 
 export class QuantumService {
   private static instance: QuantumService
@@ -13,19 +10,18 @@ export class QuantumService {
     return QuantumService.instance
   }
 
-  async solveQAOA(matrix: DistanceMatrix, params: OptimizationRequest["quantum"], stops: DeliveryStop[]): Promise<RouteResult> {
+  async solveQAOA(distanceMatrix: number[][], params: OptimizationRequest["quantum"]): Promise<RouteResult> {
     const startTime = Date.now()
 
-    return this.simulateHAWSQAOA(matrix, params, startTime, stops)
+    return this.simulateHAWSQAOA(distanceMatrix, params, startTime)
   }
 
   private async simulateHAWSQAOA(
-    matrix: DistanceMatrix,
+    distanceMatrix: number[][],
     params: OptimizationRequest["quantum"],
     startTime: number,
-    stops: DeliveryStop[],
   ): Promise<RouteResult> {
-    const n = matrix.distances.length
+    const n = distanceMatrix.length
 
     const baseTime = 800 // Higher base time for sophisticated algorithm
     const warmStartTime = n * 50 // Time for generating warm starts
@@ -35,11 +31,10 @@ export class QuantumService {
 
     await new Promise((resolve) => setTimeout(resolve, Math.min(simulatedTime, 6000)))
 
-    const classicalBaseline = await this.generateClassicalBaseline(matrix.distances)
-    const warmStarts = await this.generateWarmStarts(classicalBaseline, matrix.distances, 5)
+    const classicalBaseline = await this.generateClassicalBaseline(distanceMatrix)
+    const warmStarts = await this.generateWarmStarts(classicalBaseline, distanceMatrix, 5)
 
-    const bestResult = await this.hawsQAOAOptimization(matrix, warmStarts, params, stops)
-    const finalCost = this.calculateTourCost(bestResult.tour, matrix, stops);
+    const bestResult = await this.hawsQAOAOptimization(distanceMatrix, warmStarts, params)
 
     const runtimeMs = Date.now() - startTime
 
@@ -47,10 +42,9 @@ export class QuantumService {
       solver: "quantum",
       name: `HAWS-QAOA p=${params.p}`,
       tour: bestResult.tour,
-      length: Math.round(finalCost.length * 100) / 100,
-      timeMinutes: Math.round(finalCost.duration * 100) / 100,
-      feasible: finalCost.timeWindowViolations === 0,
-      violations: { pos: 0, city: 0, timeWindow: finalCost.timeWindowViolations },
+      length: Math.round(bestResult.length * 100) / 100,
+      feasible: true,
+      violations: { pos: 0, city: 0 },
       runtimeMs,
       parameters: {
         p: params.p,
@@ -65,53 +59,7 @@ export class QuantumService {
     }
   }
 
-  private parseTimeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  }
-
-  private calculateTourCost(tour: number[], matrix: DistanceMatrix, stops: DeliveryStop[]): { cost: number, length: number, duration: number, timeWindowViolations: number } {
-    let length = 0;
-    let duration = 0;
-    let timeWindowViolations = 0;
-    let currentTime = 0; // Start at time 0
-
-    const hasTimeWindows = stops.some(s => s.timeWindow);
-
-    for (let i = 0; i < tour.length - 1; i++) {
-      const from = tour[i];
-      const to = tour[i + 1];
-      length += matrix.distances[from][to];
-
-      const travelTime = matrix.durations?.[from]?.[to] || (matrix.distances[from][to] * 2);
-      duration += travelTime;
-
-      if (hasTimeWindows) {
-        currentTime += travelTime;
-        const stopInfo = stops[to];
-        if (stopInfo.timeWindow) {
-          const start = this.parseTimeToMinutes(stopInfo.timeWindow.start);
-          const end = this.parseTimeToMinutes(stopInfo.timeWindow.end);
-          if (currentTime < start) {
-            // Wait until the time window opens
-            currentTime = start;
-          } else if (currentTime > end) {
-            timeWindowViolations++;
-          }
-        }
-        // Add service time for the stop
-        if(i < tour.length - 2) { // No service time at the end depot
-            currentTime += SERVICE_TIME_MINUTES;
-            duration += SERVICE_TIME_MINUTES;
-        }
-      }
-    }
-
-    const cost = length + timeWindowViolations * TIME_WINDOW_PENALTY;
-    return { cost, length, duration, timeWindowViolations };
-  }
-
-  private async generateClassicalBaseline(distanceMatrix: number[][]): Promise<number[]> {
+  private async generateClassicalBaseline(distanceMatrix: number[]): Promise<number[]> {
     const n = distanceMatrix.length
 
     // Nearest neighbor construction
@@ -170,13 +118,12 @@ export class QuantumService {
   }
 
   private async hawsQAOAOptimization(
-    matrix: DistanceMatrix,
+    distanceMatrix: number[][],
     warmStarts: number[][],
     params: OptimizationRequest["quantum"],
-    stops: DeliveryStop[],
-  ): Promise<{ tour: number[]; cost: number }> {
+  ): Promise<{ tour: number[]; length: number }> {
     let bestTour: number[] = []
-    let bestCost = Number.POSITIVE_INFINITY
+    let bestLength = Number.POSITIVE_INFINITY
 
     // Process each warm start
     for (const warmStart of warmStarts) {
@@ -185,17 +132,17 @@ export class QuantumService {
 
       for (let layer = 1; layer <= params.p; layer++) {
         // Simulate CVaR-QAOA sampling with constraint-preserving mixers
-        const samples = await this.cvarQAOASampling(matrix.distances, currentTour, params, layer)
+        const samples = await this.cvarQAOASampling(distanceMatrix, currentTour, params, layer)
 
         // Elite selection and local search refinement
-        const elites = this.selectElites(samples, matrix, stops, 10)
+        const elites = this.selectElites(samples, distanceMatrix, 10)
 
         for (const elite of elites) {
-          const refined = this.localSearchRefinement(elite, matrix.distances)
-          const { cost } = this.calculateTourCost(refined, matrix, stops)
+          const refined = this.localSearchRefinement(elite, distanceMatrix)
+          const length = this.calculateTourLength(refined, distanceMatrix)
 
-          if (cost < bestCost) {
-            bestCost = cost
+          if (length < bestLength) {
+            bestLength = length
             bestTour = refined
           }
         }
@@ -207,7 +154,7 @@ export class QuantumService {
       }
     }
 
-    return { tour: bestTour, cost: bestCost }
+    return { tour: bestTour, length: bestLength }
   }
 
   private async cvarQAOASampling(
@@ -278,15 +225,15 @@ export class QuantumService {
     return tour
   }
 
-  private selectElites(samples: number[][], matrix: DistanceMatrix, stops: DeliveryStop[], k: number): number[][] {
+  private selectElites(samples: number[][], distanceMatrix: number[][], k: number): number[][] {
     const alpha = 0.2 // CVaR parameter - focus on best 20%
 
     const evaluated = samples.map((tour) => ({
       tour,
-      cost: this.calculateTourCost(tour, matrix, stops).cost,
+      length: this.calculateTourLength(tour, distanceMatrix),
     }))
 
-    evaluated.sort((a, b) => a.cost - b.cost)
+    evaluated.sort((a, b) => a.length - b.length)
 
     const cvarCount = Math.max(1, Math.floor(samples.length * alpha))
     const eliteCount = Math.min(k, cvarCount)
@@ -397,7 +344,7 @@ export class QuantumService {
     return currentTour
   }
 
-  private calculateTourLength(tour: number[], distanceMatrix: number[][]): number {
+  private calculateTourLength(tour: number[], distanceMatrix: number[]): number {
     let length = 0
     for (let i = 0; i < tour.length - 1; i++) {
       length += distanceMatrix[tour[i]][tour[i + 1]]

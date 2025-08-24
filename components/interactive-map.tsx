@@ -91,16 +91,6 @@ export function InteractiveMap() {
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
 
-  const handleTimeWindowChange = (stopId: string, part: "start" | "end", value: string) => {
-    setStops(stops.map(s => s.id === stopId ? {
-      ...s,
-      timeWindow: {
-        start: part === 'start' ? value : (s.timeWindow?.start || "00:00"),
-        end: part === 'end' ? value : (s.timeWindow?.end || "23:59"),
-      }
-    } : s));
-  };
-
   const [isQiskitOptimizing, setIsQiskitOptimizing] = useState(false)
   const [qiskitError, setQiskitError] = useState<string | null>(null)
 
@@ -659,45 +649,25 @@ export function InteractiveMap() {
             </CardHeader>
             <CardContent className="space-y-3">
               {stops.map((stop) => (
-                <div key={stop.id} className="p-2 rounded-lg border border-transparent hover:border-muted">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{stop.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
-                        </span>
-                      </div>
-                      {stop.isDepot && (
-                        <Badge variant="secondary" className="text-xs">
-                          Depot
-                        </Badge>
-                      )}
+                <div key={stop.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{stop.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                      </span>
                     </div>
-                    {!stop.isDepot && (
-                      <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing || isQiskitOptimizing}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    {stop.isDepot && (
+                      <Badge variant="secondary" className="text-xs">
+                        Depot
+                      </Badge>
                     )}
                   </div>
                   {!stop.isDepot && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <Label className="text-xs">TW:</Label>
-                      <Input
-                        type="time"
-                        className="h-7 text-xs w-24"
-                        value={stop.timeWindow?.start || ""}
-                        onChange={(e) => handleTimeWindowChange(stop.id, "start", e.target.value)}
-                      />
-                      <span className="text-xs">-</span>
-                       <Input
-                        type="time"
-                        className="h-7 text-xs w-24"
-                        value={stop.timeWindow?.end || ""}
-                        onChange={(e) => handleTimeWindowChange(stop.id, "end", e.target.value)}
-                      />
-                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing || isQiskitOptimizing}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   )}
                 </div>
               ))}
@@ -779,14 +749,6 @@ export function InteractiveMap() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {route.timeWindowUnsupported && (
-                           <Tooltip>
-                              <TooltipTrigger>
-                                <Badge variant="outline" className="text-xs text-muted-foreground">TW N/A</Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>Time windows not supported by this solver.</TooltipContent>
-                            </Tooltip>
-                        )}
                         <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
                           {route.feasible ? "Valid" : "Invalid"}
                         </Badge>
@@ -805,15 +767,12 @@ export function InteractiveMap() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground pl-5">
-                      <div>Dist: {route.length.toFixed(1)} km</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pl-5">
+                      <div>Distance: {route.length.toFixed(1)} km</div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {route.timeMinutes ? `${route.timeMinutes.toFixed(0)} min` : `${route.runtimeMs}ms`}
+                        {route.runtimeMs}ms
                       </div>
-                       {route.violations.timeWindow > 0 && (
-                        <div className="text-destructive">TWV: {route.violations.timeWindow}</div>
-                      )}
                     </div>
                   </div>
                 ))}
