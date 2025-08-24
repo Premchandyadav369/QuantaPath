@@ -39,6 +39,7 @@ export function InteractiveMap() {
     { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
     { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
   ])
+  const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
 
   const [isDepotMode, setIsDepotMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -253,6 +254,7 @@ export function InteractiveMap() {
 
       setRoutes(response.candidates)
       setSelectedRoute(response.candidates[response.bestIndex])
+      setProcessedStops(stops)
 
       // Clear status after delay
       setTimeout(() => {
@@ -303,6 +305,7 @@ export function InteractiveMap() {
 
       setRoutes(mockRoutes)
       setSelectedRoute(mockRoutes[0])
+      setProcessedStops(stops)
       setOptimizationProgress(0)
       setOptimizationStatus("")
     }
@@ -543,6 +546,7 @@ export function InteractiveMap() {
                   isDepotMode={isDepotMode}
                   onMapReady={(map) => (mapRef.current = map)}
                   searchedLocation={searchedLocation}
+                  stopsForRoutes={processedStops}
                 />
 
                 {/* Map Controls */}
@@ -755,7 +759,7 @@ export function InteractiveMap() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
-        <NavigationPanel stops={stops} selectedRoute={selectedRoute} />
+        <NavigationPanel stops={processedStops} selectedRoute={selectedRoute} />
       </div>
 
       {routes.length > 0 && (
@@ -770,7 +774,7 @@ export function InteractiveMap() {
             </p>
           </CardHeader>
           <CardContent>
-            <CarbonFootprintCalculator routes={routes} selectedRoute={selectedRoute} />
+            <CarbonFootprintCalculator routes={routes} selectedRoute={selectedRoute} stops={processedStops} />
           </CardContent>
         </Card>
       )}
