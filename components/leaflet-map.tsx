@@ -9,6 +9,7 @@ interface LeafletMapProps {
   selectedRoute: RouteResult | null
   onMapClick: (lat: number, lng: number) => void
   onStopRemove: (id: string) => void
+  onStopMove: (id: string, lat: number, lng: number) => void;
   isOptimizing: boolean
   isDepotMode?: boolean // Added depot mode prop
   onMapReady?: (map: any) => void;
@@ -21,6 +22,7 @@ export function LeafletMap({
   selectedRoute,
   onMapClick,
   onStopRemove,
+  onStopMove,
   isOptimizing,
   isDepotMode = false, // Added depot mode with default value
   onMapReady,
@@ -134,7 +136,10 @@ export function LeafletMap({
         iconAnchor: [20, 35],
       })
 
-      const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map)
+      const marker = L.marker([stop.lat, stop.lng], {
+        icon,
+        draggable: !isDepot && !isOptimizing,
+       }).addTo(map)
 
       // Handle remove button click
       if (!isDepot && !isOptimizing) {
@@ -144,6 +149,11 @@ export function LeafletMap({
             onStopRemove(stop.id)
           }
         })
+
+        marker.on('dragend', (e: any) => {
+          const { lat, lng } = e.target.getLatLng();
+          onStopMove(stop.id, lat, lng);
+        });
       }
 
       markersRef.current.push(marker)
