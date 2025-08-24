@@ -184,6 +184,17 @@ export function InteractiveMap() {
     [isOptimizing],
   )
 
+  const handleStopMove = useCallback(
+    (id: string, lat: number, lng: number) => {
+      if (isOptimizing) return
+      setStops((prev) =>
+        prev.map((stop) => (stop.id === id ? { ...stop, lat, lng } : stop))
+      )
+      setError(null)
+    },
+    [isOptimizing],
+  )
+
   const clearStops = useCallback(() => {
     if (isOptimizing) return
     setStops((prev) => prev.filter((stop) => stop.isDepot))
@@ -504,6 +515,7 @@ export function InteractiveMap() {
                   selectedRoute={selectedRoute}
                   onMapClick={handleMapClick}
                   onStopRemove={removeStop}
+                  onStopMove={handleStopMove}
                   isOptimizing={isOptimizing}
                   isDepotMode={isDepotMode}
                   onMapReady={(map) => (mapRef.current = map)}
