@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch } from "lucide-react"
+import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch, Github, Linkedin } from "lucide-react"
 import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
@@ -362,8 +362,9 @@ export default function HomePage() {
                   href="https://www.linkedin.com/in/premchand-yadav-a785691a2/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-accent hover:text-accent/80 transition-colors"
+                  className="text-sm text-accent hover:text-accent/80 transition-colors flex items-center gap-1"
                 >
+                  <Linkedin className="w-4 h-4" />
                   LinkedIn Profile
                 </a>
                 <span className="text-muted-foreground">•</span>
@@ -371,8 +372,9 @@ export default function HomePage() {
                   href="https://github.com/Premchandyadav369"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-accent hover:text-accent/80 transition-colors"
+                  className="text-sm text-accent hover:text-accent/80 transition-colors flex items-center gap-1"
                 >
+                  <Github className="w-4 h-4" />
                   GitHub Profile
                 </a>
               </div>
