@@ -1,13 +1,20 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch } from "lucide-react"
 import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function HomePage() {
+  const [activeSection, setActiveSection] = useState("demo")
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -21,10 +28,10 @@ export default function HomePage() {
               <span className="text-xl font-bold">QuantaPath</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm">
+              <Button variant={activeSection === "demo" ? "secondary" : "ghost"} size="sm" onClick={() => setActiveSection("demo")}>
                 Demo
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant={activeSection === "benchmarks" ? "secondary" : "ghost"} size="sm" onClick={() => setActiveSection("benchmarks")}>
                 Benchmarks
               </Button>
               <Button variant="ghost" size="sm">
@@ -58,16 +65,29 @@ export default function HomePage() {
                 <MapPin className="w-5 h-5 mr-2" />
                 Try Demo
               </Button>
-              <Button size="lg" variant="outline">
-                <GitBranch className="w-5 h-5 mr-2" />
-                View GitHub
-              </Button>
+              <a href="https://github.com/Premchandyadav369/QuantaPath" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="outline">
+                  <GitBranch className="w-5 h-5 mr-2" />
+                  View GitHub
+                </Button>
+              </a>
             </div>
           </div>
 
           {/* Interactive Route Optimization Demo */}
           <div className="mt-16 max-w-6xl mx-auto">
-            <InteractiveMap />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+              >
+                {activeSection === "demo" && <InteractiveMap />}
+                {activeSection === "benchmarks" && <BenchmarkDashboard />}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -232,12 +252,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Benchmark Results Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <BenchmarkDashboard />
-        </div>
-      </section>
 
       {/* Algorithm Efficiency Comparison Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
@@ -368,7 +382,7 @@ export default function HomePage() {
                 </a>
                 <span className="text-muted-foreground">•</span>
                 <a
-                  href="https://github.com/Premchandyadav369"
+                  href="https://github.com/Premchandyadav369/QuantaPath"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-accent hover:text-accent/80 transition-colors"

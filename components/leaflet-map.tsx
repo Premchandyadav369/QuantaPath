@@ -1,7 +1,24 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import ReactDOMServer from "react-dom/server"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
+import { MapPin, Star, Truck, Building } from "lucide-react"
+
+const getIcon = (icon: string) => {
+  switch (icon) {
+    case "Pin":
+      return <MapPin />
+    case "Star":
+      return <Star />
+    case "Truck":
+      return <Truck />
+    case "Building":
+      return <Building />
+    default:
+      return <MapPin />
+  }
+}
 
 interface LeafletMapProps {
   stops: DeliveryStop[]
@@ -123,11 +140,15 @@ export function LeafletMap({
       const isDepot = stop.isDepot
 
       // Create custom icon
+      const iconHtml = stop.icon
+        ? ReactDOMServer.renderToString(getIcon(stop.icon))
+        : `<div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}"></div>`
+
       const icon = L.divIcon({
         className: `custom-marker ${isDepot ? "depot-marker" : "stop-marker"} ${isDepotMode && isDepot ? "depot-highlight" : ""}`, // Added depot highlight class
         html: `
           <div class="marker-content">
-            <div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}"></div>
+            ${iconHtml}
             <div class="marker-label">${stop.name}</div>
             ${!isDepot && !isOptimizing ? '<div class="marker-remove">×</div>' : ""}
           </div>

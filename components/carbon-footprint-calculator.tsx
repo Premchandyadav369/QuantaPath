@@ -26,15 +26,15 @@ interface VehicleType {
   id: string
   name: string
   co2PerKm: number // kg CO2 per km
-  fuelCostPerKm: number // USD per km
+  fuelCostPerKm: number // INR per km
   icon: string
 }
 
 const vehicleTypes: VehicleType[] = [
-  { id: "electric", name: "Electric Van", co2PerKm: 0.05, fuelCostPerKm: 0.08, icon: "⚡" },
-  { id: "hybrid", name: "Hybrid Van", co2PerKm: 0.12, fuelCostPerKm: 0.15, icon: "🔋" },
-  { id: "diesel", name: "Diesel Van", co2PerKm: 0.25, fuelCostPerKm: 0.22, icon: "⛽" },
-  { id: "gasoline", name: "Gasoline Van", co2PerKm: 0.28, fuelCostPerKm: 0.25, icon: "🚐" },
+  { id: "electric", name: "Electric Van", co2PerKm: 0.05, fuelCostPerKm: 0.08 * 83, icon: "⚡" },
+  { id: "hybrid", name: "Hybrid Van", co2PerKm: 0.12, fuelCostPerKm: 0.15 * 83, icon: "🔋" },
+  { id: "diesel", name: "Diesel Van", co2PerKm: 0.25, fuelCostPerKm: 0.22 * 83, icon: "⛽" },
+  { id: "gasoline", name: "Gasoline Van", co2PerKm: 0.28, fuelCostPerKm: 0.25 * 83, icon: "🚐" },
 ]
 
 interface CarbonFootprintCalculatorProps {
@@ -42,8 +42,11 @@ interface CarbonFootprintCalculatorProps {
   selectedRoute: RouteResult | null
 }
 
+import { motion } from "framer-motion"
+
 export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootprintCalculatorProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<string>("diesel")
+  const [activeTab, setActiveTab] = useState("impact")
 
   if (routes.length === 0) {
     return (
@@ -154,7 +157,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="impact" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="impact">Impact</TabsTrigger>
             <TabsTrigger value="comparison">Comparison</TabsTrigger>
@@ -162,7 +165,13 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
             <TabsTrigger value="projections">Projections</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="impact" className="space-y-4">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <TabsContent value="impact" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* CO2 Emissions Chart */}
               <Card>
@@ -230,7 +239,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-blue-600">${costSavings.toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-blue-600">₹{costSavings.toFixed(2)}</div>
                   <p className="text-xs text-muted-foreground">Fuel Cost Saved</p>
                 </CardContent>
               </Card>
@@ -263,12 +272,12 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
                     <YAxis
                       yAxisId="right"
                       orientation="right"
-                      label={{ value: "Cost ($)", angle: 90, position: "insideRight" }}
+                      label={{ value: "Cost (₹)", angle: 90, position: "insideRight" }}
                     />
                     <Tooltip />
                     <Legend />
                     <Bar yAxisId="left" dataKey="co2Emissions" fill="#ef4444" name="CO₂ Emissions (kg)" />
-                    <Bar yAxisId="right" dataKey="fuelCost" fill="#3b82f6" name="Fuel Cost ($)" />
+                    <Bar yAxisId="right" dataKey="fuelCost" fill="#3b82f6" name="Fuel Cost (₹)" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -289,12 +298,12 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
                     <YAxis
                       yAxisId="right"
                       orientation="right"
-                      label={{ value: "Cost ($)", angle: 90, position: "insideRight" }}
+                      label={{ value: "Cost (₹)", angle: 90, position: "insideRight" }}
                     />
                     <Tooltip />
                     <Legend />
                     <Bar yAxisId="left" dataKey="co2" fill="#22c55e" name="CO₂ Emissions (kg)" />
-                    <Bar yAxisId="right" dataKey="cost" fill="#3b82f6" name="Fuel Cost ($)" />
+                    <Bar yAxisId="right" dataKey="cost" fill="#3b82f6" name="Fuel Cost (₹)" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -321,7 +330,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Annual Cost Savings:</span>
-                    <span className="font-bold text-blue-600">${annualCostSavings.toFixed(0)}</span>
+                    <span className="font-bold text-blue-600">₹{annualCostSavings.toFixed(0)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Deliveries per Year:</span>
@@ -350,7 +359,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Cost per km:</span>
-                    <span className="font-bold">${vehicle.fuelCostPerKm.toFixed(3)}</span>
+                    <span className="font-bold">₹{vehicle.fuelCostPerKm.toFixed(3)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Quantum Advantage:</span>
@@ -372,7 +381,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
                     By using quantum optimization, your delivery fleet could save{" "}
                     <span className="font-bold">{annualCO2Savings.toFixed(0)} kg of CO₂</span> annually, equivalent to
                     planting <span className="font-bold">{treesEquivalent.toFixed(0)} trees</span> and saving{" "}
-                    <span className="font-bold">${annualCostSavings.toFixed(0)}</span> in fuel costs.
+                    <span className="font-bold">₹{annualCostSavings.toFixed(0)}</span> in fuel costs.
                   </p>
                   <Badge className="bg-green-600 text-white">
                     <Award className="w-3 h-3 mr-1" />
@@ -382,6 +391,7 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
               </CardContent>
             </Card>
           </TabsContent>
+        </motion.div>
         </Tabs>
       </CardContent>
     </Card>

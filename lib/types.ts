@@ -1,5 +1,5 @@
 export interface DeliveryStop {
-  id: string
+  id:string
   name: string
   lat: number
   lng: number
@@ -11,6 +11,7 @@ export interface DeliveryStop {
     start: string
     end: string
   }
+  icon?: string
 }
 
 export interface OptimizationRequest {

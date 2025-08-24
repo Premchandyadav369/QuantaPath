@@ -27,9 +27,13 @@ import { LeafletMap } from "@/components/leaflet-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { LocationHub } from "@/components/location-hub"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
+  const [showLocationHub, setShowLocationHub] = useState(false)
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
+  const [showNavigation, setShowNavigation] = useState(false)
   const [stops, setStops] = useState<DeliveryStop[]>([
     { id: "depot", name: "Distribution Center", lat: 16.5062, lng: 80.648, isDepot: true },
     { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
@@ -161,6 +165,7 @@ export function InteractiveMap() {
         name: `Stop ${stops.filter((s) => !s.isDepot).length + 1}`,
         lat,
         lng,
+        icon: selectedIcon,
       }
 
       setStops((prev) => [...prev, newStop])
@@ -536,7 +541,11 @@ export function InteractiveMap() {
                   <Button size="sm" variant="outline" onClick={clearStops} disabled={isOptimizing}>
                     <RotateCcw className="w-4 h-4" />
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowLocationHub(!showLocationHub)} disabled={isOptimizing}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
+                {showLocationHub && <LocationHub onSelectIcon={setSelectedIcon} />}
               </div>
             </CardContent>
           </Card>
@@ -710,8 +719,11 @@ export function InteractiveMap() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
-        <NavigationPanel stops={stops} selectedRoute={selectedRoute} />
+        {showNavigation && <NavigationPanel stops={stops} selectedRoute={selectedRoute} />}
       </div>
+      <Button onClick={() => setShowNavigation(!showNavigation)} className="w-full mt-4">
+        {showNavigation ? "Hide Navigation" : "Show Navigation"}
+      </Button>
 
       {routes.length > 0 && (
         <Card className="mt-6">
