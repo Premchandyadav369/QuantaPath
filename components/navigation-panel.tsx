@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 import { DistanceService } from "@/lib/services/distance-service"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 interface NavigationStep {
   from: DeliveryStop
@@ -44,146 +44,6 @@ interface NavigationPanelProps {
 export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    const fetchDetailedRoute = async () => {
-      if (!selectedRoute || stops.length < 2) {
-        setNavigationSteps([])
-        return
-      }
-
-      setIsLoading(true)
-      try {
-        const distanceService = DistanceService.getInstance()
-        const detailedRoute = await distanceService.getDetailedRoute(stops, selectedRoute.tour)
-
-        const steps: NavigationStep[] = detailedRoute.segments.map((segment, index) => ({
-          from: segment.fromStop,
-          to: segment.toStop,
-          distance: segment.distance,
-          duration: segment.duration,
-          direction: mapInstructionTypeToDirection(segment.instructions[0]?.type || "straight"),
-          bearing: calculateBearing(segment.fromStop.lat, segment.fromStop.lng, segment.toStop.lat, segment.toStop.lng),
-          instruction:
-            segment.instructions[0]?.instruction ||
-            generateFallbackInstruction(segment.fromStop, segment.toStop, index === 0),
-          turnInstructions: segment.instructions.map((inst) => ({
-            type: inst.type,
-            instruction: inst.instruction,
-            distance: inst.distance,
-            duration: inst.duration,
-          })),
-        }))
-
-        setNavigationSteps(steps)
-      } catch (error) {
-        console.warn("Failed to fetch detailed route, using fallback:", error)
-        // Fallback to original calculation method
-        setNavigationSteps(calculateNavigationSteps())
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchDetailedRoute()
-  }, [selectedRoute, stops])
-
-  if (!selectedRoute || stops.length < 2) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Navigation className="w-5 h-5" />
-            Turn-by-Turn Navigation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <Route className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Select an optimized route to see navigation instructions</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
-    switch (type) {
-      case "left":
-        return "left"
-      case "right":
-        return "right"
-      case "sharp-left":
-        return "sharp-left"
-      case "sharp-right":
-        return "sharp-right"
-      case "u-turn":
-        return "u-turn"
-      case "straight":
-        return "straight"
-      default:
-        return "forward"
-    }
-  }
-
-  const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
-    if (isFirst && from.isDepot) {
-      return `Start from ${from.name} and head towards ${to.name}`
-    }
-    if (to.isDepot) {
-      return `Return to ${to.name}`
-    }
-    return `Continue to ${to.name}`
-  }
-
-  // Calculate navigation steps from the route (fallback method)
-  const calculateNavigationSteps = (): NavigationStep[] => {
-    const steps: NavigationStep[] = []
-    const tour = selectedRoute.tour
-
-    for (let i = 0; i < tour.length - 1; i++) {
-      const fromIndex = tour[i]
-      const toIndex = tour[i + 1]
-      const from = stops[fromIndex]
-      const to = stops[toIndex]
-
-      if (!from || !to) continue
-
-      // Calculate distance using Haversine formula
-      const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
-
-      // Estimate duration (assuming average speed of 40 km/h in city)
-      const duration = (distance / 40) * 60 // minutes
-
-      // Calculate bearing and direction
-      const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
-      const direction = getDirection(
-        bearing,
-        i > 0
-          ? calculateBearing(
-              stops[tour[i - 1]]?.lat || from.lat,
-              stops[tour[i - 1]]?.lng || from.lng,
-              from.lat,
-              from.lng,
-            )
-          : 0,
-      )
-
-      const instruction = generateInstruction(from, to, direction, distance)
-
-      steps.push({
-        from,
-        to,
-        distance,
-        duration,
-        direction,
-        bearing,
-        instruction,
-      })
-    }
-
-    return steps
-  }
 
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371 // Earth's radius in km
@@ -239,6 +99,147 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
     }
 
     return `${directionText} towards ${to.name} (${distance.toFixed(1)} km)`
+  }
+
+  const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
+    switch (type) {
+      case "left":
+        return "left"
+      case "right":
+        return "right"
+      case "sharp-left":
+        return "sharp-left"
+      case "sharp-right":
+        return "sharp-right"
+      case "u-turn":
+        return "u-turn"
+      case "straight":
+        return "straight"
+      default:
+        return "forward"
+    }
+  }
+
+  const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
+    if (isFirst && from.isDepot) {
+      return `Start from ${from.name} and head towards ${to.name}`
+    }
+    if (to.isDepot) {
+      return `Return to ${to.name}`
+    }
+    return `Continue to ${to.name}`
+  }
+
+  // Calculate navigation steps from the route (fallback method)
+  const calculateNavigationSteps = useCallback((): NavigationStep[] => {
+    if (!selectedRoute) return []
+    const steps: NavigationStep[] = []
+    const tour = selectedRoute.tour
+
+    for (let i = 0; i < tour.length - 1; i++) {
+      const fromIndex = tour[i]
+      const toIndex = tour[i + 1]
+      const from = stops[fromIndex]
+      const to = stops[toIndex]
+
+      if (!from || !to) continue
+
+      // Calculate distance using Haversine formula
+      const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
+
+      // Estimate duration (assuming average speed of 40 km/h in city)
+      const duration = (distance / 40) * 60 // minutes
+
+      // Calculate bearing and direction
+      const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
+      const direction = getDirection(
+        bearing,
+        i > 0
+          ? calculateBearing(
+              stops[tour[i - 1]]?.lat || from.lat,
+              stops[tour[i - 1]]?.lng || from.lng,
+              from.lat,
+              from.lng,
+            )
+          : 0,
+      )
+
+      const instruction = generateInstruction(from, to, direction, distance)
+
+      steps.push({
+        from,
+        to,
+        distance,
+        duration,
+        direction,
+        bearing,
+        instruction,
+      })
+    }
+
+    return steps
+  }, [stops, selectedRoute])
+
+  useEffect(() => {
+    const fetchDetailedRoute = async () => {
+      if (!selectedRoute || stops.length < 2) {
+        setNavigationSteps([])
+        return
+      }
+
+      setIsLoading(true)
+      try {
+        const distanceService = DistanceService.getInstance()
+        const detailedRoute = await distanceService.getDetailedRoute(stops, selectedRoute.tour)
+
+        const steps: NavigationStep[] = detailedRoute.segments.map((segment, index) => ({
+          from: segment.fromStop,
+          to: segment.toStop,
+          distance: segment.distance,
+          duration: segment.duration,
+          direction: mapInstructionTypeToDirection(segment.instructions[0]?.type || "straight"),
+          bearing: calculateBearing(segment.fromStop.lat, segment.fromStop.lng, segment.toStop.lat, segment.toStop.lng),
+          instruction:
+            segment.instructions[0]?.instruction ||
+            generateFallbackInstruction(segment.fromStop, segment.toStop, index === 0),
+          turnInstructions: segment.instructions.map((inst) => ({
+            type: inst.type,
+            instruction: inst.instruction,
+            distance: inst.distance,
+            duration: inst.duration,
+          })),
+        }))
+
+        setNavigationSteps(steps)
+      } catch (error) {
+        console.warn("Failed to fetch detailed route, using fallback:", error)
+        // Fallback to original calculation method
+        setNavigationSteps(calculateNavigationSteps())
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDetailedRoute()
+  }, [selectedRoute, stops, calculateNavigationSteps])
+
+  if (!selectedRoute || stops.length < 2) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Navigation className="w-5 h-5" />
+            Turn-by-Turn Navigation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <Route className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>Select an optimized route to see navigation instructions</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   const getDirectionIcon = (direction: string) => {

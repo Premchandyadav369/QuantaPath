@@ -20,6 +20,8 @@ import {
   Download,
   Share2,
   Search,
+  Heart,
+  Info,
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
@@ -87,6 +89,7 @@ export function InteractiveMap() {
   const [optimizationStatus, setOptimizationStatus] = useState("")
   const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
   const [error, setError] = useState<string | null>(null)
+  const [likedRoutes, setLikedRoutes] = useState<string[]>([])
 
   const [quantumParams, setQuantumParams] = useState({
     use: true,
@@ -400,6 +403,13 @@ export function InteractiveMap() {
     setSearchQuery("");
   };
 
+  const toggleLikeRoute = (routeName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setLikedRoutes((prev) =>
+      prev.includes(routeName) ? prev.filter((r) => r !== routeName) : [...prev, routeName],
+    )
+  }
+
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
@@ -439,15 +449,28 @@ export function InteractiveMap() {
                   </Badge>
                 )}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {isDepotMode
-                  ? "Click on the map to place the depot (starting point)"
-                  : routes.length > 0
-                    ? "Click different routes in the results panel to compare visualizations. Add more stops or modify existing ones."
-                    : "Click on the map to add delivery stops. Use 'Set Depot' to change the starting point."}
-              </p>
             </CardHeader>
             <CardContent>
+              <div className="p-3 mb-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-blue-800">How to use the demo:</h4>
+                  <ul className="text-sm text-blue-700 list-disc list-inside space-y-1 mt-1">
+                    <li>
+                      <span className="font-semibold">Add Stops:</span> Click anywhere on the map to add a delivery location.
+                    </li>
+                    <li>
+                      <span className="font-semibold">Set Depot:</span> Click the <MapPin className="w-4 h-4 inline-block mx-1" /> button, then click the map to set your starting point.
+                    </li>
+                    <li>
+                      <span className="font-semibold">Optimize:</span> Once you have at least 3 stops, click &quot;Run Optimization&quot;.
+                    </li>
+                    <li>
+                      <span className="font-semibold">Interact:</span> Drag stops to move them, or click the trash icon to remove them.
+                    </li>
+                  </ul>
+                </div>
+              </div>
               <div className="flex gap-2 mb-4">
                 <Input
                   type="text"
@@ -640,21 +663,37 @@ export function InteractiveMap() {
                     }`}
                     onClick={() => setSelectedRoute(route)}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="w-3 h-3 rounded-full mt-1"
                           style={{ backgroundColor: getRouteColor(route.solver, route.name) }}
                         />
-                        <span className="font-medium text-sm">{route.name}</span>
-                        {route.solver === "quantum" && <Zap className="w-3 h-3 text-accent" />}
+                        <div className="flex-grow">
+                          <span className="font-medium text-sm">{route.name}</span>
+                          {route.solver === "quantum" && <Zap className="w-3 h-3 text-accent inline-block ml-1" />}
+                        </div>
                       </div>
-                      <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
-                        {route.feasible ? "Valid" : "Invalid"}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={route.feasible ? "default" : "destructive"} className="text-xs">
+                          {route.feasible ? "Valid" : "Invalid"}
+                        </Badge>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="w-6 h-6"
+                          onClick={(e) => toggleLikeRoute(route.name, e)}
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${
+                              likedRoutes.includes(route.name) ? "text-red-500 fill-current" : "text-muted-foreground"
+                            }`}
+                          />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pl-5">
                       <div>Distance: {route.length.toFixed(1)} km</div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
@@ -663,6 +702,12 @@ export function InteractiveMap() {
                     </div>
                   </div>
                 ))}
+
+                {routes.length > 0 && (
+                  <div className="text-xs text-muted-foreground pt-2 border-t">
+                    Liked routes: {likedRoutes.length}
+                  </div>
+                )}
 
                 {routes.length > 1 && (
                   <>

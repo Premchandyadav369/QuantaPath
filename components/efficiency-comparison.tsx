@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts"
+import { Zap } from "lucide-react"
 
 interface AlgorithmStats {
   name: string
@@ -63,6 +65,14 @@ export function EfficiencyComparison() {
   const bestClassical = Math.max(...algorithmStats.filter((a) => a.type === "classical").map((a) => a.avgQuality))
   const quantumAlgorithms = algorithmStats.filter((a) => a.type === "quantum")
 
+  const chartData = algorithmStats.map((algo) => ({
+    name: algo.name.replace("Nearest Neighbor + 3-opt", "NN+3-opt").replace("Christofides Approx", "Christofides"),
+    Quality: algo.avgQuality,
+    Runtime: algo.avgRuntime,
+    "Success Rate": algo.successRate,
+    type: algo.type,
+  }))
+
   return (
     <div className="space-y-6">
       <Card>
@@ -83,103 +93,62 @@ export function EfficiencyComparison() {
               <TabsTrigger value="scalability">Scalability Analysis</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-4">
-              <div className="grid gap-4">
-                {algorithmStats.map((algo, index) => (
-                  <Card key={index} className={algo.type === "quantum" ? "border-purple-200 bg-purple-50/50" : ""}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{algo.name}</h4>
-                          <Badge variant={algo.type === "quantum" ? "default" : "secondary"}>{algo.type}</Badge>
-                          {algo.quantumAdvantage && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              +{algo.quantumAdvantage}% vs classical
-                            </Badge>
-                          )}
-                        </div>
-                        <Badge
-                          variant={
-                            algo.scalability === "excellent"
-                              ? "default"
-                              : algo.scalability === "good"
-                                ? "secondary"
-                                : algo.scalability === "fair"
-                                  ? "outline"
-                                  : "destructive"
-                          }
-                        >
-                          {algo.scalability} scalability
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-sm text-muted-foreground mb-1">Solution Quality</div>
-                          <Progress value={algo.avgQuality} className="h-2 mb-1" />
-                          <div className="text-xs text-muted-foreground">{algo.avgQuality}% of optimal</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground mb-1">Success Rate</div>
-                          <Progress value={algo.successRate} className="h-2 mb-1" />
-                          <div className="text-xs text-muted-foreground">{algo.successRate}% feasible</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground mb-1">Runtime</div>
-                          <div className="text-lg font-semibold">{algo.avgRuntime}ms</div>
-                          <div className="text-xs text-muted-foreground">avg execution time</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="quantum-advantage" className="space-y-4">
+            <TabsContent value="overview" className="space-y-4 pt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Quantum Supremacy Analysis</CardTitle>
+                  <CardTitle>Performance Overview</CardTitle>
                   <CardDescription>
-                    Where quantum algorithms demonstrate measurable advantages over classical approaches
+                    Comparing quantum and classical algorithms across key metrics.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} />
+                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Quality / Success (%)', angle: -90, position: 'insideLeft' }}/>
+                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Runtime (ms)', angle: 90, position: 'insideRight' }} />
+                      <Tooltip />
+                      <Legend verticalAlign="top" />
+                      <Bar yAxisId="left" dataKey="Quality" fill="#8884d8">
+                        {
+                          chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.type === 'quantum' ? '#7B2CBF' : '#06D6A0'}/>
+                          ))
+                        }
+                      </Bar>
+                      <Bar yAxisId="right" dataKey="Runtime" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="quantum-advantage" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-purple-500" />
+                    Quantum Advantage Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    HAWS-QAOA shows a significant quality improvement over classical methods.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {quantumAlgorithms.map((algo, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">{algo.name}</h4>
-                        {algo.quantumAdvantage && algo.quantumAdvantage > 0 ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            ✓ Quantum Advantage: +{algo.quantumAdvantage}%
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-orange-600 border-orange-200">
-                            Limited Advantage
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">vs Best Classical:</span>
-                          <span className="ml-2 font-medium">
-                            {algo.avgQuality > bestClassical
-                              ? `+${(algo.avgQuality - bestClassical).toFixed(1)}% better`
-                              : `${(bestClassical - algo.avgQuality).toFixed(1)}% behind`}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Key Strength:</span>
-                          <span className="ml-2 font-medium">
-                            {algo.name === "HAWS-QAOA" ? "Basin hopping + local refinement" : "Quantum sampling"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={quantumAlgorithms.map(algo => ({ name: algo.name, "Quality Advantage (%)": (algo.avgQuality - bestClassical).toFixed(1) }))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Quality Advantage (%)" fill="#7B2CBF" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <h5 className="font-semibold text-blue-900 mb-2">Key Insights</h5>
                     <ul className="text-sm text-blue-800 space-y-1">
                       <li>• HAWS-QAOA shows 12.3% improvement over best classical algorithms</li>
