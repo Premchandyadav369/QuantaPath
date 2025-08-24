@@ -32,11 +32,12 @@
 
 ## ✨ Key Features
 
-- 🗺️ **Interactive Map**: Add delivery stops easily by clicking on the map or entering addresses.
+- 🗺️ **Interactive Map**: Add delivery stops easily by clicking on the map or entering addresses. You can also drag and drop stops to update their locations.
 - ⚛️ **Quantum vs. Classical Comparison**: Benchmark the performance of a simulated **HAWS-QAOA** (Hybrid Adaptive Warm-Start QAOA) quantum algorithm against classical solvers like **Nearest Neighbor** and **Simulated Annealing**.
+- ❤️ **Like Feature**: Save your favorite routes by clicking the heart icon next to them.
 - ⚙️ **Advanced Parameter Tuning**: Fine-tune the settings for both quantum and classical solvers to gain deeper insights into their behavior.
-- 📊 **Performance Analytics**: Visualize performance with comprehensive dashboards and efficiency comparisons.
-- 🌱 **Carbon Footprint Estimation**: Calculate the estimated environmental impact of the generated routes.
+- 📊 **Interactive Performance Analytics**: Visualize performance with comprehensive and interactive dashboards and efficiency comparisons.
+- 🌱 **Carbon Footprint Estimation**: Calculate the estimated environmental impact of the generated routes in both USD and INR.
 - 📍 **Real-Time Navigation**: Get turn-by-turn directions for the optimized route via the **OpenRouteService**.
 
 ---
@@ -47,10 +48,10 @@ QuantaPath tackles the **Traveling Salesperson Problem (TSP)** using a hybrid qu
 
 1.  **Input Stops**: The user provides a set of delivery locations.
 2.  **Distance Matrix Calculation**: The application uses the OpenRouteService API to compute the distances between all pairs of stops.
-3.  **Optimization**: The core of the application runs the **HAWS-QAOA** simulation alongside classical algorithms to find the most efficient route.
-4.  **Results & Analytics**: The optimized routes are displayed on the map, accompanied by detailed performance analytics.
+3.  **Optimization**: The application uses a mock API to simulate the results of running the **HAWS-QAOA** algorithm alongside classical algorithms to find the most efficient route.
+4.  **Results & Analytics**: The optimized routes are displayed on the map, accompanied by detailed and interactive performance analytics.
 
-⚠️ **Disclaimer**: The quantum processes in QuantaPath are **simulations** designed for educational and demonstration purposes. They mimic the behavior of quantum algorithms but do not run on actual quantum hardware.
+⚠️ **Disclaimer**: The quantum processes in QuantaPath are **simulations** designed for educational and demonstration purposes. They mimic the behavior of quantum algorithms but do not run on actual quantum hardware. The optimization results are also simulated for the purpose of this demo.
 
 ---
 
@@ -66,7 +67,7 @@ Our implementation uses a **Hybrid Adaptive Warm-Start Quantum Approximate Optim
 
 -   🌐 **Superior Exploration**: Quantum superposition allows the algorithm to explore a vast number of potential routes simultaneously.
 -   🔗 **Global Correlation**: Entanglement helps capture complex, global relationships between all the cities in a route, leading to better solutions.
--   ⚡ **Faster Convergence**: Our simulations show that this hybrid approach can converge to optimal routes **3.2x faster** and yield **12.7% better quality** solutions compared to the classical solvers tested.
+-   ⚡ **Faster Convergence**: Our simulations suggest that this hybrid approach can converge to optimal routes faster and yield better quality solutions compared to the classical solvers tested.
 
 ---
 
@@ -135,6 +136,7 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
     ```
 
 ---
+---
 
 ## 👨‍💻 The Team
 
@@ -144,7 +146,6 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
 -   **Vyshwaran P** – Full Stack Developer
 -   **Sanjana Pasam** – UI/UX & Frontend Magic 🎨
 
----
 
 ## 📜 License
 
