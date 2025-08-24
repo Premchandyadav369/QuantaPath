@@ -18,7 +18,7 @@ interface BenchmarkResult {
     tourLength: number
     runtime: number
     feasible: boolean
-    parameters?: Record<string, any>
+    parameters?: Record<string, unknown>
   }[]
   bestLength: number
   quantumAdvantage?: number

@@ -18,7 +18,113 @@ import {
 } from "lucide-react"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 import { DistanceService } from "@/lib/services/distance-service"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+
+const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
+  switch (type) {
+    case "left":
+      return "left"
+    case "right":
+      return "right"
+    case "sharp-left":
+      return "sharp-left"
+    case "sharp-right":
+      return "sharp-right"
+    case "u-turn":
+      return "u-turn"
+    case "straight":
+      return "straight"
+    default:
+      return "forward"
+  }
+}
+
+const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
+  if (isFirst && from.isDepot) {
+    return `Start from ${from.name} and head towards ${to.name}`
+  }
+  if (to.isDepot) {
+    return `Return to ${to.name}`
+  }
+  return `Continue to ${to.name}`
+}
+
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371 // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const lat1Rad = (lat1 * Math.PI) / 180
+  const lat2Rad = (lat2 * Math.PI) / 180
+
+  const y = Math.sin(dLng) * Math.cos(lat2Rad)
+  const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng)
+
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI
+  return (bearing + 360) % 360
+}
+
+const getDirection = (currentBearing: number, previousBearing: number): NavigationStep["direction"] => {
+  if (previousBearing === 0) return "forward" // First step
+
+  let angleDiff = currentBearing - previousBearing
+  if (angleDiff < 0) angleDiff += 360
+  if (angleDiff > 360) angleDiff -= 360
+
+  if (angleDiff >= 315 || angleDiff <= 45) return "forward"
+  if (angleDiff > 45 && angleDiff <= 135) return "right"
+  if (angleDiff > 135 && angleDiff <= 225) return "backward"
+  return "left"
+}
+
+const generateInstruction = (from: DeliveryStop, to: DeliveryStop, direction: string, distance: number): string => {
+  const directionText =
+    {
+      forward: "Continue straight",
+      left: "Turn left",
+      right: "Turn right",
+      backward: "Make a U-turn",
+    }[direction] || "Continue"
+
+  if (from.isDepot) {
+    return `Start from ${from.name} and head towards ${to.name}`
+  }
+
+  if (to.isDepot) {
+    return `${directionText} and return to ${to.name} (${distance.toFixed(1)} km)`
+  }
+
+  return `${directionText} towards ${to.name} (${distance.toFixed(1)} km)`
+}
+
+const getDirectionIcon = (direction: string) => {
+  switch (direction) {
+    case "forward":
+    case "straight":
+      return <ArrowUp className="w-4 h-4" />
+    case "left":
+      return <ArrowLeft className="w-4 h-4" />
+    case "right":
+      return <ArrowRight className="w-4 h-4" />
+    case "sharp-left":
+      return <ArrowDownLeft className="w-4 h-4" />
+    case "sharp-right":
+      return <ArrowUpRight className="w-4 h-4" />
+    case "backward":
+    case "u-turn":
+      return <RotateCcw className="w-4 h-4" />
+    default:
+      return <ArrowUp className="w-4 h-4" />
+  }
+}
 
 interface NavigationStep {
   from: DeliveryStop
@@ -44,6 +150,41 @@ interface NavigationPanelProps {
 export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  const calculateNavigationSteps = useCallback((): NavigationStep[] => {
+    if (!selectedRoute) return []
+    const steps: NavigationStep[] = []
+    const tour = selectedRoute.tour
+
+    for (let i = 0; i < tour.length - 1; i++) {
+      const fromIndex = tour[i]
+      const toIndex = tour[i + 1]
+      const from = stops[fromIndex]
+      const to = stops[toIndex]
+
+      if (!from || !to) continue
+
+      const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
+      const duration = (distance / 40) * 60
+      const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
+      const direction = getDirection(
+        bearing,
+        i > 0
+          ? calculateBearing(
+              stops[tour[i - 1]]?.lat || from.lat,
+              stops[tour[i - 1]]?.lng || from.lng,
+              from.lat,
+              from.lng,
+            )
+          : 0,
+      )
+      const instruction = generateInstruction(from, to, direction, distance)
+
+      steps.push({ from, to, distance, duration, direction, bearing, instruction })
+    }
+
+    return steps
+  }, [selectedRoute, stops])
 
   useEffect(() => {
     const fetchDetailedRoute = async () => {
@@ -78,7 +219,6 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
         setNavigationSteps(steps)
       } catch (error) {
         console.warn("Failed to fetch detailed route, using fallback:", error)
-        // Fallback to original calculation method
         setNavigationSteps(calculateNavigationSteps())
       } finally {
         setIsLoading(false)
@@ -86,7 +226,7 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
     }
 
     fetchDetailedRoute()
-  }, [selectedRoute, stops])
+  }, [selectedRoute, stops, calculateNavigationSteps])
 
   if (!selectedRoute || stops.length < 2) {
     return (
@@ -105,161 +245,6 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
         </CardContent>
       </Card>
     )
-  }
-
-  const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
-    switch (type) {
-      case "left":
-        return "left"
-      case "right":
-        return "right"
-      case "sharp-left":
-        return "sharp-left"
-      case "sharp-right":
-        return "sharp-right"
-      case "u-turn":
-        return "u-turn"
-      case "straight":
-        return "straight"
-      default:
-        return "forward"
-    }
-  }
-
-  const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
-    if (isFirst && from.isDepot) {
-      return `Start from ${from.name} and head towards ${to.name}`
-    }
-    if (to.isDepot) {
-      return `Return to ${to.name}`
-    }
-    return `Continue to ${to.name}`
-  }
-
-  // Calculate navigation steps from the route (fallback method)
-  const calculateNavigationSteps = (): NavigationStep[] => {
-    const steps: NavigationStep[] = []
-    const tour = selectedRoute.tour
-
-    for (let i = 0; i < tour.length - 1; i++) {
-      const fromIndex = tour[i]
-      const toIndex = tour[i + 1]
-      const from = stops[fromIndex]
-      const to = stops[toIndex]
-
-      if (!from || !to) continue
-
-      // Calculate distance using Haversine formula
-      const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
-
-      // Estimate duration (assuming average speed of 40 km/h in city)
-      const duration = (distance / 40) * 60 // minutes
-
-      // Calculate bearing and direction
-      const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
-      const direction = getDirection(
-        bearing,
-        i > 0
-          ? calculateBearing(
-              stops[tour[i - 1]]?.lat || from.lat,
-              stops[tour[i - 1]]?.lng || from.lng,
-              from.lat,
-              from.lng,
-            )
-          : 0,
-      )
-
-      const instruction = generateInstruction(from, to, direction, distance)
-
-      steps.push({
-        from,
-        to,
-        distance,
-        duration,
-        direction,
-        bearing,
-        instruction,
-      })
-    }
-
-    return steps
-  }
-
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371 // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180
-    const dLng = ((lng2 - lng1) * Math.PI) / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
-  }
-
-  const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const dLng = ((lng2 - lng1) * Math.PI) / 180
-    const lat1Rad = (lat1 * Math.PI) / 180
-    const lat2Rad = (lat2 * Math.PI) / 180
-
-    const y = Math.sin(dLng) * Math.cos(lat2Rad)
-    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng)
-
-    const bearing = (Math.atan2(y, x) * 180) / Math.PI
-    return (bearing + 360) % 360
-  }
-
-  const getDirection = (currentBearing: number, previousBearing: number): NavigationStep["direction"] => {
-    if (previousBearing === 0) return "forward" // First step
-
-    let angleDiff = currentBearing - previousBearing
-    if (angleDiff < 0) angleDiff += 360
-    if (angleDiff > 360) angleDiff -= 360
-
-    if (angleDiff >= 315 || angleDiff <= 45) return "forward"
-    if (angleDiff > 45 && angleDiff <= 135) return "right"
-    if (angleDiff > 135 && angleDiff <= 225) return "backward"
-    return "left"
-  }
-
-  const generateInstruction = (from: DeliveryStop, to: DeliveryStop, direction: string, distance: number): string => {
-    const directionText =
-      {
-        forward: "Continue straight",
-        left: "Turn left",
-        right: "Turn right",
-        backward: "Make a U-turn",
-      }[direction] || "Continue"
-
-    if (from.isDepot) {
-      return `Start from ${from.name} and head towards ${to.name}`
-    }
-
-    if (to.isDepot) {
-      return `${directionText} and return to ${to.name} (${distance.toFixed(1)} km)`
-    }
-
-    return `${directionText} towards ${to.name} (${distance.toFixed(1)} km)`
-  }
-
-  const getDirectionIcon = (direction: string) => {
-    switch (direction) {
-      case "forward":
-      case "straight":
-        return <ArrowUp className="w-4 h-4" />
-      case "left":
-        return <ArrowLeft className="w-4 h-4" />
-      case "right":
-        return <ArrowRight className="w-4 h-4" />
-      case "sharp-left":
-        return <ArrowDownLeft className="w-4 h-4" />
-      case "sharp-right":
-        return <ArrowUpRight className="w-4 h-4" />
-      case "backward":
-      case "u-turn":
-        return <RotateCcw className="w-4 h-4" />
-      default:
-        return <ArrowUp className="w-4 h-4" />
-    }
   }
 
   const totalDistance = navigationSteps.reduce((sum, step) => sum + step.distance, 0)

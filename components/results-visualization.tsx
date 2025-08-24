@@ -29,10 +29,9 @@ import type { RouteResult } from "@/lib/types"
 
 interface ResultsVisualizationProps {
   routes: RouteResult[]
-  selectedRoute: RouteResult | null
 }
 
-export function ResultsVisualization({ routes, selectedRoute }: ResultsVisualizationProps) {
+export function ResultsVisualization({ routes }: ResultsVisualizationProps) {
   if (routes.length === 0) {
     return (
       <Card>
@@ -53,7 +52,7 @@ export function ResultsVisualization({ routes, selectedRoute }: ResultsVisualiza
   }
 
   // Prepare data for charts
-  const performanceData = routes.map((route, index) => ({
+  const performanceData = routes.map((route) => ({
     name: route.name.replace(/QAOA p=\d+/, "HAWS-QAOA"),
     distance: Number.parseFloat(route.length.toFixed(2)),
     runtime: route.runtimeMs,

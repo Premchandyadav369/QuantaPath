@@ -36,7 +36,6 @@ export class ClassicalService {
 
   private async nearestNeighborWith2Opt(distanceMatrix: number[][]): Promise<RouteResult> {
     const startTime = Date.now()
-    const n = distanceMatrix.length
 
     // Phase 1: Nearest Neighbor construction
     let tour = this.nearestNeighborConstruction(distanceMatrix)

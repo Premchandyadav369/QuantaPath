@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from "react"
+import type { Map } from "leaflet"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -46,7 +47,7 @@ export function InteractiveMap() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<Map>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
     {
@@ -171,7 +172,7 @@ export function InteractiveMap() {
       setStops((prev) => [...prev, newStop])
       setError(null)
     },
-    [stops, isOptimizing, isDepotMode],
+    [stops, isOptimizing, isDepotMode, selectedIcon],
   )
 
   const toggleDepotMode = useCallback(() => {
@@ -718,7 +719,7 @@ export function InteractiveMap() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
+        <ResultsVisualization routes={routes} />
         {showNavigation && <NavigationPanel stops={stops} selectedRoute={selectedRoute} />}
       </div>
       <Button onClick={() => setShowNavigation(!showNavigation)} className="w-full mt-4">
@@ -737,7 +738,7 @@ export function InteractiveMap() {
             </p>
           </CardHeader>
           <CardContent>
-            <CarbonFootprintCalculator routes={routes} selectedRoute={selectedRoute} />
+            <CarbonFootprintCalculator routes={routes} />
           </CardContent>
         </Card>
       )}

@@ -55,7 +55,7 @@ export interface RouteResult {
     city: number
   }
   runtimeMs: number
-  parameters?: Record<string, any>
+  parameters?: Record<string, unknown>
 }
 
 export interface OptimizationResponse {

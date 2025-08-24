@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import ReactDOMServer from "react-dom/server"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 import { MapPin, Star, Truck, Building } from "lucide-react"
+import type { Map, Marker, Polyline, GeoJSON } from "leaflet"
 
 const getIcon = (icon: string) => {
   switch (icon) {
@@ -29,7 +30,7 @@ interface LeafletMapProps {
   onStopMove: (id: string, lat: number, lng: number) => void;
   isOptimizing: boolean
   isDepotMode?: boolean // Added depot mode prop
-  onMapReady?: (map: any) => void;
+  onMapReady?: (map: Map) => void;
   searchedLocation?: { lat: number; lng: number; name: string } | null;
 }
 
@@ -46,10 +47,10 @@ export function LeafletMap({
   searchedLocation,
 }: LeafletMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
-  const routeLinesRef = useRef<any[]>([])
-  const searchedMarkerRef = useRef<any>(null)
+  const mapInstanceRef = useRef<Map | null>(null)
+  const markersRef = useRef<Marker[]>([])
+  const routeLinesRef = useRef<(Polyline | GeoJSON)[]>([])
+  const searchedMarkerRef = useRef<Marker | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load Leaflet dynamically
@@ -94,7 +95,7 @@ export function LeafletMap({
     }).addTo(map)
 
     // Handle map clicks
-    map.on("click", (e: any) => {
+    map.on("click", (e: L.LeafletMouseEvent) => {
       if (!isOptimizing) {
         onMapClick(e.latlng.lat, e.latlng.lng)
       }
@@ -164,14 +165,15 @@ export function LeafletMap({
 
       // Handle remove button click
       if (!isDepot && !isOptimizing) {
-        marker.on("click", (e: any) => {
+        marker.on("click", (e: L.LeafletMouseEvent) => {
+          const target = e.originalEvent.target as HTMLElement;
           e.originalEvent.stopPropagation()
-          if (e.originalEvent.target.classList.contains("marker-remove")) {
+          if (target.classList.contains("marker-remove")) {
             onStopRemove(stop.id)
           }
         })
 
-        marker.on('dragend', (e: any) => {
+        marker.on('dragend', (e) => {
           const { lat, lng } = e.target.getLatLng();
           onStopMove(stop.id, lat, lng);
         });
@@ -185,7 +187,7 @@ export function LeafletMap({
       const group = new L.featureGroup(markersRef.current)
       map.fitBounds(group.getBounds().pad(0.1))
     }
-  }, [stops, isLoaded, onStopRemove, isOptimizing, isDepotMode]) // Added isDepotMode dependency
+  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode]) // Added isDepotMode dependency
 
   // Effect to show searched location marker
   useEffect(() => {
@@ -228,7 +230,7 @@ export function LeafletMap({
     routeLinesRef.current.forEach((line) => map.removeLayer(line));
     routeLinesRef.current = [];
 
-    const fetchAndDrawRoute = async (route) => {
+    const fetchAndDrawRoute = async (route: RouteResult) => {
       const color = getRouteColor(route.solver, route.name);
       const isSelected = selectedRoute?.name === route.name;
 
@@ -470,6 +472,6 @@ export function LeafletMap({
 // Add type declaration for Leaflet
 declare global {
   interface Window {
-    L: any
+    L: typeof import('leaflet');
   }
 }

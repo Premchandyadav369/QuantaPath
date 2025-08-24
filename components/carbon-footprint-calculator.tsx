@@ -39,12 +39,11 @@ const vehicleTypes: VehicleType[] = [
 
 interface CarbonFootprintCalculatorProps {
   routes: RouteResult[]
-  selectedRoute: RouteResult | null
 }
 
 import { motion } from "framer-motion"
 
-export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootprintCalculatorProps) {
+export function CarbonFootprintCalculator({ routes }: CarbonFootprintCalculatorProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<string>("diesel")
   const [activeTab, setActiveTab] = useState("impact")
 

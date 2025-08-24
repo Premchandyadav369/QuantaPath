@@ -1,10 +1,9 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch } from "lucide-react"
 import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
@@ -278,7 +277,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <CarbonFootprintCalculator routes={[]} selectedRoute={null} />
+          <CarbonFootprintCalculator routes={[]} />
         </div>
       </section>
 

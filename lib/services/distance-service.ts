@@ -40,6 +40,40 @@ export interface DetailedRoute {
   geometry: [number, number][]
 }
 
+interface OpenRouteServiceInstruction {
+  distance: number;
+  duration: number;
+  instruction: string;
+  type: number;
+  way_points: [number, number];
+  coordinate: [number, number];
+}
+
+interface OpenRouteServiceSegment {
+  distance: number;
+  duration: number;
+  steps: OpenRouteServiceInstruction[];
+}
+
+interface OpenRouteServiceProperties {
+  segments: OpenRouteServiceSegment[];
+  summary: {
+    distance: number;
+    duration: number;
+  };
+}
+
+interface OpenRouteServiceFeature {
+  geometry: {
+    coordinates: [number, number][];
+  };
+  properties: OpenRouteServiceProperties;
+}
+
+interface OpenRouteServiceResponse {
+  features: OpenRouteServiceFeature[];
+}
+
 export class DistanceService {
   private static instance: DistanceService
   private cache = new Map<string, DistanceMatrix>()
@@ -107,11 +141,25 @@ export class DistanceService {
       const distances: number[][] = []
       const durations: number[][] = []
 
-      data.rows.forEach((row: any, i: number) => {
+      interface GoogleDistanceMatrixElement {
+        status: string;
+        distance: {
+          value: number;
+        };
+        duration: {
+          value: number;
+        };
+      }
+
+      interface GoogleDistanceMatrixRow {
+        elements: GoogleDistanceMatrixElement[];
+      }
+
+      data.rows.forEach((row: GoogleDistanceMatrixRow, i: number) => {
         distances[i] = []
         durations[i] = []
 
-        row.elements.forEach((element: any, j: number) => {
+        row.elements.forEach((element: GoogleDistanceMatrixElement, j: number) => {
           if (element.status === "OK") {
             distances[i][j] = element.distance.value / 1000 // Convert to km
             durations[i][j] = element.duration.value / 60 // Convert to minutes
@@ -256,12 +304,12 @@ export class DistanceService {
     }
   }
 
-  private parseOpenRouteResponse(data: any, stops: DeliveryStop[], tour: number[]): DetailedRoute {
+  private parseOpenRouteResponse(data: OpenRouteServiceResponse, stops: DeliveryStop[], tour: number[]): DetailedRoute {
     const feature = data.features[0]
     const geometry = feature.geometry.coordinates
     const properties = feature.properties
     const segments = properties.segments || []
-    const instructions = properties.segments?.flatMap((seg: any) => seg.steps || []) || []
+    const instructions = properties.segments?.flatMap((seg) => seg.steps || []) || []
 
     const routeSegments: RouteSegment[] = []
     let segmentIndex = 0
@@ -293,11 +341,11 @@ export class DistanceService {
     }
   }
 
-  private extractInstructionsForSegment(instructions: any[], segmentIndex: number): TurnInstruction[] {
+  private extractInstructionsForSegment(instructions: OpenRouteServiceInstruction[], segmentIndex: number): TurnInstruction[] {
     return instructions
-      .filter((inst: any) => inst.way_points?.[0] >= segmentIndex)
+      .filter((inst) => inst.way_points?.[0] >= segmentIndex)
       .slice(0, 5) // Limit to 5 instructions per segment
-      .map((inst: any) => ({
+      .map((inst) => ({
         type: this.mapInstructionType(inst.type),
         instruction: inst.instruction || "Continue straight",
         distance: (inst.distance || 0) / 1000,

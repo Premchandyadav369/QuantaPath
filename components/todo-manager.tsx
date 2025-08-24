@@ -18,7 +18,6 @@ export function TodoManager() {
 
   const completedTasks = tasks.filter((task) => task.status === "done").length
   const totalTasks = tasks.length
-  const progress = (completedTasks / totalTasks) * 100
 
   return (
     <Card>
