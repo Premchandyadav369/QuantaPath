@@ -44,7 +44,7 @@ export interface OptimizationRequest {
 
 export interface RouteResult {
   solver: "quantum" | "classical"
-  name: string
+  name:string
   tour: number[]
   length: number
   timeMinutes?: number
@@ -55,6 +55,7 @@ export interface RouteResult {
   }
   runtimeMs: number
   parameters?: Record<string, any>
+  hubId?: string
 }
 
 export interface OptimizationResponse {
