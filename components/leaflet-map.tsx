@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 
+const routeColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"];
+
 interface LeafletMapProps {
   stops: DeliveryStop[]
   routes: RouteResult[]
@@ -17,7 +19,6 @@ interface LeafletMapProps {
   searchedLocation?: { lat: number; lng: number; name: string } | null;
   simulationTime: number;
   isSimulating: boolean;
-  routeColors: string[];
 }
 
 export function LeafletMap({
@@ -34,12 +35,12 @@ export function LeafletMap({
   searchedLocation,
   simulationTime,
   isSimulating,
-  routeColors,
 }: LeafletMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
   const routeLinesRef = useRef<any[]>([])
+  const arrowMarkersRef = useRef<any[]>([])
   const searchedMarkerRef = useRef<any>(null)
   const vehicleMarkerRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -183,7 +184,7 @@ export function LeafletMap({
       const group = new L.featureGroup(markersRef.current)
       map.fitBounds(group.getBounds().pad(0.1))
     }
-  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode, routeColors])
+  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode])
 
   // Effect to show searched location marker
   useEffect(() => {
@@ -281,6 +282,17 @@ export function LeafletMap({
                     geometry: { type: "LineString", coordinates: fullPolylineCoords }
                 }]
             });
+        } else if (hasError) {
+            // Fallback for simulation polyline
+            const fallbackCoords = tourStops.map(stop => [stop.lng, stop.lat]);
+            setRoutePolyline({
+                type: "FeatureCollection",
+                features: [{
+                    type: "Feature",
+                    properties: {},
+                    geometry: { type: "LineString", coordinates: fallbackCoords }
+                }]
+            });
         }
 
       } else {
@@ -359,6 +371,58 @@ export function LeafletMap({
     }
 
   }, [simulationTime, isSimulating, routePolyline, isLoaded]);
+
+  // Effect for drawing route direction arrows
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded || !routePolyline || !selectedRoute) {
+      arrowMarkersRef.current.forEach((marker) => mapInstanceRef.current.removeLayer(marker));
+      arrowMarkersRef.current = [];
+      return;
+    };
+
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    // Clear existing arrows
+    arrowMarkersRef.current.forEach((marker) => map.removeLayer(marker));
+    arrowMarkersRef.current = [];
+
+    const coords = routePolyline.features[0].geometry.coordinates;
+    const arrowInterval = 200; // meters
+    let totalDistance = 0;
+
+    for (let i = 0; i < coords.length - 1; i++) {
+      const start = L.latLng(coords[i][1], coords[i][0]);
+      const end = L.latLng(coords[i + 1][1], coords[i + 1][0]);
+      const segmentDist = start.distanceTo(end);
+
+      if (segmentDist === 0) continue;
+
+      const bearing = calculateBearing(start.lat, start.lng, end.lat, end.lng);
+
+      let distanceCovered = 0;
+      while (distanceCovered < segmentDist) {
+        if (totalDistance % arrowInterval < (totalDistance - segmentDist) % arrowInterval) {
+           const point = L.latLng(
+            start.lat + (end.lat - start.lat) * (distanceCovered / segmentDist),
+            start.lng + (end.lng - start.lng) * (distanceCovered / segmentDist)
+          );
+
+          const arrowIcon = L.divIcon({
+            className: 'route-arrow',
+            html: `<div style="transform: rotate(${bearing}deg); font-size: 1.5em; color: ${getRouteColor(selectedRoute.solver, selectedRoute.name)};">➤</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          });
+
+          const arrow = L.marker(point, { icon: arrowIcon }).addTo(map);
+          arrowMarkersRef.current.push(arrow);
+        }
+        distanceCovered += 20; // check every 20m
+        totalDistance += 20;
+      }
+    }
+  }, [routePolyline, selectedRoute, isLoaded]); // Rerun when polyline or selected route changes
 
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
