@@ -220,36 +220,58 @@ export function LeafletMap({
       const color = getRouteColor(route.solver, route.name);
       const isSelected = selectedRoute?.name === route.name;
 
-      // For selected route, fetch and draw the real road path
       if (isSelected) {
         const tourStops = route.tour.map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
         if (tourStops.length < 2) return;
 
-        const coordinates = tourStops.map(stop => [stop.lng, stop.lat]);
+        let fullPolylineCoords = [];
+        let hasError = false;
 
-        try {
-          const response = await fetch("/api/directions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ coordinates }),
-          });
+        for (let i = 0; i < tourStops.length - 1; i++) {
+            const startStop = tourStops[i];
+            const endStop = tourStops[i+1];
+            const coordinates = [[startStop.lng, startStop.lat], [endStop.lng, endStop.lat]];
 
-          if (!response.ok) throw new Error(`Failed to fetch directions: ${response.statusText}`);
+            try {
+                const response = await fetch("/api/directions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ coordinates }),
+                });
 
-          const geojson = await response.json();
-          setRoutePolyline(geojson); // Save for simulation
+                if (!response.ok) throw new Error(`Failed to fetch directions: ${response.statusText}`);
 
-          const routeLayer = L.geoJSON(geojson, {
-            style: { color, weight: 4, opacity: 1 },
-          }).addTo(map);
-          routeLinesRef.current.push(routeLayer);
+                const geojson = await response.json();
+                const routeLayer = L.geoJSON(geojson, {
+                    style: { color, weight: 4, opacity: 1 },
+                }).addTo(map);
+                routeLinesRef.current.push(routeLayer);
 
-        } catch (error) {
-          console.error("Error fetching route geometry, falling back to straight lines:", error);
-          const routeCoords = tourStops.map(stop => [stop.lat, stop.lng]);
-          const polyline = L.polyline(routeCoords, { color: "red", weight: 4, opacity: 1 }).addTo(map);
-          routeLinesRef.current.push(polyline);
+                if (geojson.features?.[0]?.geometry?.coordinates) {
+                    const segmentCoords = geojson.features[0].geometry.coordinates;
+                    fullPolylineCoords.push(...(i === 0 ? segmentCoords : segmentCoords.slice(1)));
+                }
+
+            } catch (error) {
+                hasError = true;
+                console.error("Error fetching route segment, falling back to straight line for segment:", error);
+                const routeCoords = [[startStop.lat, startStop.lng], [endStop.lat, endStop.lng]];
+                const polyline = L.polyline(routeCoords, { color: "red", weight: 4, opacity: 1 }).addTo(map);
+                routeLinesRef.current.push(polyline);
+            }
         }
+
+        if (fullPolylineCoords.length > 0 && !hasError) {
+            setRoutePolyline({
+                type: "FeatureCollection",
+                features: [{
+                    type: "Feature",
+                    properties: {},
+                    geometry: { type: "LineString", coordinates: fullPolylineCoords }
+                }]
+            });
+        }
+
       } else {
         // Draw non-selected routes as straight lines
         const routeCoords = route.tour.map(stopIndex => {
