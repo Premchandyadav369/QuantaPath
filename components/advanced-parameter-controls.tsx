@@ -46,6 +46,7 @@ interface AdvancedParameterControlsProps {
   onExport: () => void
   onShare: () => void
   onRunQiskit: () => void
+  onExportMap: () => void
   isOptimizing: boolean
 }
 
@@ -59,6 +60,7 @@ export function AdvancedParameterControls({
   onExport,
   onShare,
   onRunQiskit,
+  onExportMap,
   isOptimizing,
 }: AdvancedParameterControlsProps) {
   const [activeTab, setActiveTab] = useState("quantum")
@@ -133,6 +135,14 @@ export function AdvancedParameterControls({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Export results</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onExportMap} disabled={isOptimizing}>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export Map as Image</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>

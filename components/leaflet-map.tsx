@@ -111,6 +111,8 @@ export function LeafletMap({
   useEffect(() => {
     if (!mapInstanceRef.current || !isLoaded) return
 
+    console.log("Updating markers, stops:", stops);
+
     const L = window.L
     const map = mapInstanceRef.current
 

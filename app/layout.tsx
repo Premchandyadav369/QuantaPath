@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
+import Script from "next/script"
 import "./globals.css"
 
 const inter = Inter({
@@ -28,7 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script src="https://cdn.jsdelivr.net/npm/leaflet.export@1.3.0/dist/leaflet.export.min.js" strategy="beforeInteractive" />
+      </body>
     </html>
   )
 }

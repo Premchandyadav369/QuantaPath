@@ -407,6 +407,15 @@ export function InteractiveMap() {
     }
   }, [stops, quantumParams, classicalParams]);
 
+  const exportMap = useCallback(() => {
+    if (mapRef.current && mapRef.current.exportDownload) {
+      mapRef.current.exportDownload();
+    } else {
+      console.error("Map export function is not available.");
+      setError("Map export functionality is not loaded correctly.");
+    }
+  }, []);
+
   const handleSearch = async () => {
     if (!searchQuery) return;
     setSearchError(null);
@@ -689,6 +698,7 @@ export function InteractiveMap() {
             onExport={exportResults}
             onShare={shareConfiguration}
             onRunQiskit={runQiskitOptimization}
+            onExportMap={exportMap}
             isOptimizing={isOptimizing || isQiskitOptimizing}
           />
 
