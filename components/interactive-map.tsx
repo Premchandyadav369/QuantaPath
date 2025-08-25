@@ -30,6 +30,7 @@ import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import { SimulationControls } from "@/components/simulation-controls"
+import { OptimizedRouteMap } from "@/components/optimized-route-map"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
@@ -41,6 +42,7 @@ export function InteractiveMap() {
     { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
   ])
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
+  const [showOptimizedMap, setShowOptimizedMap] = useState(false)
 
   const [isDepotMode, setIsDepotMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -261,6 +263,7 @@ export function InteractiveMap() {
       setRoutes(response.candidates)
       setSelectedRoute(response.candidates[response.bestIndex])
       setProcessedStops(stops)
+      setShowOptimizedMap(true)
 
       // Clear status after delay
       setTimeout(() => {
@@ -312,6 +315,7 @@ export function InteractiveMap() {
       setRoutes(mockRoutes)
       setSelectedRoute(mockRoutes[0])
       setProcessedStops(stops)
+      setShowOptimizedMap(true)
       setOptimizationProgress(0)
       setOptimizationStatus("")
     }
@@ -822,6 +826,23 @@ export function InteractiveMap() {
         <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
         <NavigationPanel stops={processedStops} selectedRoute={selectedRoute} />
       </div>
+
+      {showOptimizedMap && selectedRoute && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Route className="w-5 h-5" />
+              Optimized Route Overview
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              The best route found by the optimization algorithms.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <OptimizedRouteMap stops={processedStops} route={selectedRoute} />
+          </CardContent>
+        </Card>
+      )}
 
       {routes.length > 0 && (
         <Card className="mt-6">
