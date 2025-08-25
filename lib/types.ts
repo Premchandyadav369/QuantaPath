@@ -64,6 +64,7 @@ export interface OptimizationResponse {
   candidates: RouteResult[]
   bestIndex: number
   polyline?: string
+  stopsWithHubs?: DeliveryStop[]
   diagnostics: {
     energyHistogram?: Array<[number, number]>
     feasibilityRate: number

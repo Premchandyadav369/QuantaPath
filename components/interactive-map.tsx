@@ -217,17 +217,13 @@ export function InteractiveMap() {
   }, [isOptimizing])
 
   const optimizeRoutes = useCallback(async () => {
-    const hubs = stops.filter(s => s.isDepot);
-    const deliveryStops = stops.filter(s => !s.isDepot);
-
-    if (hubs.length === 0) {
-      setError("Please add at least one hub to start the optimization.");
-      return;
+    if (stops.filter((s) => !s.isDepot).length < 2) {
+      setError("Please add at least 2 delivery stops to optimize routes.")
+      return
     }
-
-    if (deliveryStops.length < 2) {
-      setError("Please add at least 2 delivery stops to optimize routes.");
-      return;
+    if (stops.filter((s) => s.isDepot).length === 0) {
+      setError("Please add at least one hub.")
+      return
     }
 
     setIsOptimizing(true)
@@ -250,67 +246,35 @@ export function InteractiveMap() {
         })
       }, 200)
 
-      setOptimizationStatus("Building distance matrix...")
+      setOptimizationStatus("Building distance matrix and assigning stops to hubs...")
 
-      const hubs = stops.filter(s => s.isDepot);
-      const deliveryStops = stops.filter(s => !s.isDepot);
-
-      // Assign each stop to the nearest hub
-      const stopsWithHubs = deliveryStops.map(stop => {
-        let nearestHubId = '';
-        let minDistance = Infinity;
-
-        hubs.forEach(hub => {
-          const distance = getHaversineDistance(stop.lat, stop.lng, hub.lat, hub.lng);
-          if (distance < minDistance) {
-            minDistance = distance;
-            nearestHubId = hub.id;
-          }
-        });
-        return { ...stop, hubId: nearestHubId };
-      });
-
-      const stopsByHub = stopsWithHubs.reduce((acc, stop) => {
-        const hubId = stop.hubId!;
-        if (!acc[hubId]) {
-          acc[hubId] = [];
-        }
-        acc[hubId].push(stop);
-        return acc;
-      }, {} as Record<string, DeliveryStop[]>);
-
-      setProcessedStops([...hubs, ...stopsWithHubs]);
-
-      const allRoutes: RouteResult[] = [];
-
-      for (const hubId in stopsByHub) {
-        const hub = hubs.find(h => h.id === hubId)!;
-        const hubStops = [hub, ...stopsByHub[hubId]];
-
-        const request: OptimizationRequest = {
-          stops: hubStops,
-          optimizeFor: "distance",
-          distanceSource: "openrouteservice",
-          quantum: quantumParams,
-          classical: classicalParams,
-          seed: 42,
-        };
-
-        const response = await apiClient.optimizeRoutes(request);
-        const routesWithHubId = response.candidates.map(route => ({
-          ...route,
-          hubId: hub.id,
-        }));
-        allRoutes.push(...routesWithHubId);
+      const request: OptimizationRequest = {
+        stops,
+        optimizeFor: "distance",
+        distanceSource: "openrouteservice",
+        quantum: quantumParams,
+        classical: classicalParams,
+        seed: 42,
       }
 
+      setOptimizationStatus("Running optimization algorithms...")
+      const response = await apiClient.optimizeRoutes(request)
       clearInterval(progressInterval)
+
       setOptimizationProgress(100)
       setOptimizationStatus("Optimization complete!")
 
-      setRoutes(allRoutes)
-      setSelectedRoute(allRoutes.length > 0 ? allRoutes.reduce((best, current) => (current.length < best.length ? current : best)) : null)
-      setProcessedStops(stops)
+      setRoutes(response.candidates)
+      setSelectedRoute(response.bestIndex !== -1 ? response.candidates[response.bestIndex] : null)
+
+      // Update stops with hub assignments from the backend
+      const hubs = stops.filter(s => s.isDepot);
+      if (response.stopsWithHubs) {
+        setProcessedStops([...hubs, ...response.stopsWithHubs]);
+      } else {
+        setProcessedStops(stops);
+      }
+
       setShowOptimizedMap(true)
 
       // Clear status after delay
@@ -477,19 +441,6 @@ export function InteractiveMap() {
     return "#0D1B2A"
   }
 
-  const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d;
-  }
-
   return (
     <div className="space-y-6">
       {routes.length > 0 && !isOptimizing && (
@@ -620,7 +571,6 @@ export function InteractiveMap() {
                   stopsForRoutes={processedStops}
                   simulationTime={simulationTime}
                   isSimulating={isSimulating}
-                  routeColors={["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"]}
                 />
 
                 {/* Map Controls */}
