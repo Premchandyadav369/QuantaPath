@@ -12,11 +12,12 @@ interface LeafletMapProps {
   onStopRemove: (id: string) => void
   onStopMove: (id: string, lat: number, lng: number) => void;
   isOptimizing: boolean
-  isDepotMode?: boolean // Added depot mode prop
+  isDepotMode?: boolean
   onMapReady?: (map: any) => void;
   searchedLocation?: { lat: number; lng: number; name: string } | null;
   simulationTime: number;
   isSimulating: boolean;
+  routeColors: string[];
 }
 
 export function LeafletMap({
@@ -28,11 +29,12 @@ export function LeafletMap({
   onStopRemove,
   onStopMove,
   isOptimizing,
-  isDepotMode = false, // Added depot mode with default value
+  isDepotMode = false,
   onMapReady,
   searchedLocation,
   simulationTime,
   isSimulating,
+  routeColors,
 }: LeafletMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -130,12 +132,21 @@ export function LeafletMap({
     stops.forEach((stop) => {
       const isDepot = stop.isDepot
 
+      const hubs = stops.filter(s => s.isDepot);
+      let color = "#7B2CBF"; // Default color
+      if (!isDepot && stop.hubId) {
+        const hubIndex = hubs.findIndex(h => h.id === stop.hubId);
+        if (hubIndex !== -1) {
+          color = routeColors[hubIndex % routeColors.length];
+        }
+      }
+
       // Create custom icon
       const icon = L.divIcon({
-        className: `custom-marker ${isDepot ? "depot-marker" : "stop-marker"} ${isDepotMode && isDepot ? "depot-highlight" : ""}`, // Added depot highlight class
+        className: `custom-marker ${isDepot ? "depot-marker" : "stop-marker"} ${isDepotMode && isDepot ? "depot-highlight" : ""}`,
         html: `
           <div class="marker-content">
-            <div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}"></div>
+            <div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}" style="background-color: ${color};"></div>
             <div class="marker-label">${stop.name}</div>
             ${!isDepot && !isOptimizing ? '<div class="marker-remove">×</div>' : ""}
           </div>
@@ -172,7 +183,7 @@ export function LeafletMap({
       const group = new L.featureGroup(markersRef.current)
       map.fitBounds(group.getBounds().pad(0.1))
     }
-  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode])
+  }, [stops, isLoaded, onStopRemove, onStopMove, isOptimizing, isDepotMode, routeColors])
 
   // Effect to show searched location marker
   useEffect(() => {
