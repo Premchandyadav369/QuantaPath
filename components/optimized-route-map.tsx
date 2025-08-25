@@ -11,6 +11,8 @@ interface OptimizedRouteMapProps {
 export function OptimizedRouteMap({ stops, route }: OptimizedRouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
+  const markersRef = useRef<any[]>([])
+  const routeLinesRef = useRef<any[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load Leaflet dynamically
@@ -68,18 +70,11 @@ export function OptimizedRouteMap({ stops, route }: OptimizedRouteMapProps) {
     const L = window.L
     const map = mapInstanceRef.current
 
-    // Clear existing layers
-    map.eachLayer((layer: any) => {
-      if (!!layer.toGeoJSON) {
-        map.removeLayer(layer);
-      }
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
-
-    const markers: any[] = [];
+    // Clear existing markers and routes
+    markersRef.current.forEach((marker) => map.removeLayer(marker))
+    markersRef.current = []
+    routeLinesRef.current.forEach((line) => map.removeLayer(line))
+    routeLinesRef.current = []
 
     // Add new markers
     stops.forEach((stop) => {
@@ -97,7 +92,7 @@ export function OptimizedRouteMap({ stops, route }: OptimizedRouteMapProps) {
       })
 
       const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map)
-      markers.push(marker);
+      markersRef.current.push(marker)
     })
 
     // Draw the route
@@ -109,6 +104,9 @@ export function OptimizedRouteMap({ stops, route }: OptimizedRouteMapProps) {
       for (let i = 0; i < tourStops.length - 1; i++) {
           const startStop = tourStops[i];
           const endStop = tourStops[i+1];
+          // Add a check to ensure stops are defined
+          if (!startStop || !endStop) continue;
+
           const coordinates = [[startStop.lng, startStop.lat], [endStop.lng, endStop.lat]];
 
           try {
@@ -121,24 +119,25 @@ export function OptimizedRouteMap({ stops, route }: OptimizedRouteMapProps) {
               if (!response.ok) throw new Error(`Failed to fetch directions: ${response.statusText}`);
 
               const geojson = await response.json();
-              L.geoJSON(geojson, {
+              const routeLayer = L.geoJSON(geojson, {
                   style: { color, weight: 4, opacity: 1 },
               }).addTo(map);
+              routeLinesRef.current.push(routeLayer);
 
           } catch (error) {
               console.error("Error fetching route segment, falling back to straight line for segment:", error);
               const routeCoords = [[startStop.lat, startStop.lng], [endStop.lat, endStop.lng]];
-              L.polyline(routeCoords, { color: "red", weight: 4, opacity: 1 }).addTo(map);
+              const polyline = L.polyline(routeCoords, { color: "red", weight: 4, opacity: 1 }).addTo(map);
+              routeLinesRef.current.push(polyline);
           }
       }
     };
 
     drawRoute();
 
-
     // Fit map to show all markers
-    if (markers.length > 0) {
-      const group = new L.featureGroup(markers)
+    if (markersRef.current.length > 0) {
+      const group = new L.featureGroup(markersRef.current)
       map.fitBounds(group.getBounds().pad(0.1))
     }
   }, [stops, route, isLoaded])

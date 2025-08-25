@@ -22,6 +22,7 @@ import {
   Search,
   Heart,
   Info,
+  Route,
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
