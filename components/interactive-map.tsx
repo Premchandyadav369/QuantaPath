@@ -256,7 +256,7 @@ export function InteractiveMap() {
       const deliveryStops = stops.filter(s => !s.isDepot);
 
       // Assign each stop to the nearest hub
-      const stopsByHub = deliveryStops.reduce((acc, stop) => {
+      const stopsWithHubs = deliveryStops.map(stop => {
         let nearestHubId = '';
         let minDistance = Infinity;
 
@@ -267,13 +267,19 @@ export function InteractiveMap() {
             nearestHubId = hub.id;
           }
         });
+        return { ...stop, hubId: nearestHubId };
+      });
 
-        if (!acc[nearestHubId]) {
-          acc[nearestHubId] = [];
+      const stopsByHub = stopsWithHubs.reduce((acc, stop) => {
+        const hubId = stop.hubId!;
+        if (!acc[hubId]) {
+          acc[hubId] = [];
         }
-        acc[nearestHubId].push(stop);
+        acc[hubId].push(stop);
         return acc;
       }, {} as Record<string, DeliveryStop[]>);
+
+      setProcessedStops([...hubs, ...stopsWithHubs]);
 
       const allRoutes: RouteResult[] = [];
 
@@ -465,16 +471,7 @@ export function InteractiveMap() {
     )
   }
 
-  const routeColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"];
-
-  const getRouteColor = (solver: "quantum" | "classical", name: string, hubId?: string) => {
-    if (hubId) {
-      const hubs = stops.filter(s => s.isDepot);
-      const hubIndex = hubs.findIndex(h => h.id === hubId);
-      if (hubIndex !== -1) {
-        return routeColors[hubIndex % routeColors.length];
-      }
-    }
+  const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
     return "#0D1B2A"
@@ -623,6 +620,7 @@ export function InteractiveMap() {
                   stopsForRoutes={processedStops}
                   simulationTime={simulationTime}
                   isSimulating={isSimulating}
+                  routeColors={["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"]}
                 />
 
                 {/* Map Controls */}
@@ -772,7 +770,7 @@ export function InteractiveMap() {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full mt-1"
-                          style={{ backgroundColor: getRouteColor(route.solver, route.name, route.hubId) }}
+                          style={{ backgroundColor: getRouteColor(route.solver, route.name) }}
                         />
                         <div className="flex-grow">
                           <span className="font-medium text-sm">{route.name}</span>

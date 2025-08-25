@@ -11,6 +11,7 @@ export interface DeliveryStop {
     start: string
     end: string
   }
+  hubId?: string
 }
 
 export interface OptimizationRequest {
