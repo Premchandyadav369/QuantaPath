@@ -114,7 +114,7 @@ export class ClassicalService {
     }
   }
 
-  private nearestNeighborConstruction(distanceMatrix: number[]): number[] {
+  private nearestNeighborConstruction(distanceMatrix: number[][]): number[] {
     const n = distanceMatrix.length
     const tour = [0] // Start from depot
     const visited = new Set([0])
@@ -126,9 +126,19 @@ export class ClassicalService {
       let nearestDistance = Number.POSITIVE_INFINITY
 
       for (let i = 0; i < n; i++) {
-        if (!visited.has(i) && distanceMatrix[current][i] < nearestDistance) {
+        if (!visited.has(i) && distanceMatrix[current] && distanceMatrix[current][i] < nearestDistance) {
           nearest = i
           nearestDistance = distanceMatrix[current][i]
+        }
+      }
+
+      if (nearest === -1) {
+        // Fallback: find any unvisited city
+        for (let i = 0; i < n; i++) {
+          if (!visited.has(i)) {
+            nearest = i
+            break
+          }
         }
       }
 
@@ -136,6 +146,9 @@ export class ClassicalService {
         tour.push(nearest)
         visited.add(nearest)
         current = nearest
+      } else {
+        // Should not happen in a connected graph, but as a safeguard
+        break
       }
     }
 
@@ -143,41 +156,27 @@ export class ClassicalService {
     return tour
   }
 
-  private twoOptImprovement(tour: number[], distanceMatrix: number[]): number[] {
-    const n = tour.length - 1 // Exclude the duplicate depot at the end
-    let improved = true
-    let currentTour = [...tour]
-    let iterations = 0
-    const maxIterations = n * n // Prevent infinite loops
-
-    while (improved && iterations < maxIterations) {
-      improved = false
-      iterations++
-
-      for (let i = 1; i < n - 1; i++) {
-        for (let j = i + 1; j < n; j++) {
-          // Calculate current distance for edges (i-1,i) and (j,j+1)
-          const currentDist =
-            distanceMatrix[currentTour[i - 1]][currentTour[i]] + distanceMatrix[currentTour[j]][currentTour[j + 1]]
-
-          // Calculate new distance for edges (i-1,j) and (i,j+1) after 2-opt swap
-          const newDist =
-            distanceMatrix[currentTour[i - 1]][currentTour[j]] + distanceMatrix[currentTour[i]][currentTour[j + 1]]
-
-          if (newDist < currentDist) {
-            // Perform 2-opt swap: reverse the segment between i and j
-            const newTour = [...currentTour]
-            for (let k = i; k <= j; k++) {
-              newTour[k] = currentTour[j - (k - i)]
-            }
-            currentTour = newTour
-            improved = true
+  private twoOptImprovement(tour: number[], distanceMatrix: number[][]): number[] {
+    const n = tour.length - 1;
+    let bestTour = [...tour];
+    let improved = true;
+    while (improved) {
+      improved = false;
+      for (let i = 1; i < n - 1 && !improved; i++) {
+        for (let j = i + 1; j < n && !improved; j++) {
+          const newTour = [
+            ...bestTour.slice(0, i),
+            ...bestTour.slice(i, j + 1).reverse(),
+            ...bestTour.slice(j + 1),
+          ];
+          if (this.calculateTourLength(newTour, distanceMatrix) < this.calculateTourLength(bestTour, distanceMatrix)) {
+            bestTour = newTour;
+            improved = true;
           }
         }
       }
     }
-
-    return currentTour
+    return bestTour;
   }
 
   private generate2OptNeighbor(tour: number[]): number[] {
@@ -196,7 +195,7 @@ export class ClassicalService {
     return newTour
   }
 
-  private calculateInitialTemperature(distanceMatrix: number[]): number {
+  private calculateInitialTemperature(distanceMatrix: number[][]): number {
     // Calculate initial temperature based on average edge weight
     let totalDistance = 0
     let edgeCount = 0
@@ -212,7 +211,7 @@ export class ClassicalService {
     return avgDistance * 0.1 // Start with 10% of average distance as temperature
   }
 
-  private calculateTourLength(tour: number[], distanceMatrix: number[]): number {
+  private calculateTourLength(tour: number[], distanceMatrix: number[][]): number {
     let length = 0
     for (let i = 0; i < tour.length - 1; i++) {
       length += distanceMatrix[tour[i]][tour[i + 1]]

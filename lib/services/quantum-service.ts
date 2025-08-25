@@ -129,17 +129,18 @@ export class QuantumService {
     warmStarts: number[][],
     params: OptimizationRequest["quantum"],
   ): Promise<{ tour: number[]; length: number }> {
-    let bestTour: number[] = []
-    let bestLength = Number.POSITIVE_INFINITY
+    let overallBestTour: number[] = []
+    let overallBestLength = Number.POSITIVE_INFINITY
 
     // Process each warm start
     for (const warmStart of warmStarts) {
-      // Simulate layerwise training (p=1 to p=params.p)
-      let currentTour = warmStart
+      let bestTourForWarmStart = warmStart
+      let bestLengthForWarmStart = this.calculateTourLength(warmStart, distanceMatrix)
 
+      // Simulate layerwise training (p=1 to p=params.p)
       for (let layer = 1; layer <= params.p; layer++) {
         // Simulate CVaR-QAOA sampling with constraint-preserving mixers
-        const samples = await this.cvarQAOASampling(distanceMatrix, currentTour, params, layer)
+        const samples = await this.cvarQAOASampling(distanceMatrix, bestTourForWarmStart, params, layer)
 
         // Elite selection and local search refinement
         const elites = this.selectElites(samples, distanceMatrix, 10)
@@ -148,20 +149,20 @@ export class QuantumService {
           const refined = this.localSearchRefinement(elite, distanceMatrix)
           const length = this.calculateTourLength(refined, distanceMatrix)
 
-          if (length < bestLength) {
-            bestLength = length
-            bestTour = refined
+          if (length < bestLengthForWarmStart) {
+            bestLengthForWarmStart = length
+            bestTourForWarmStart = refined
           }
         }
+      }
 
-        // Update current tour for next layer
-        if (elites.length > 0) {
-          currentTour = elites[0]
-        }
+      if (bestLengthForWarmStart < overallBestLength) {
+        overallBestLength = bestLengthForWarmStart
+        overallBestTour = bestTourForWarmStart
       }
     }
 
-    return { tour: bestTour, length: bestLength }
+    return { tour: overallBestTour, length: overallBestLength }
   }
 
   private async cvarQAOASampling(
@@ -203,7 +204,7 @@ export class QuantumService {
       const probabilities = remaining.map((city) => {
         const distance = distanceMatrix[current][city]
         const referenceBonus = reference.includes(city) ? 0.3 : 0
-        return Math.exp(-(distance / 1000) + referenceBonus)
+        return Math.exp(-(distance / 100) + referenceBonus)
       })
 
       const totalProb = probabilities.reduce((sum, p) => sum + p, 0)
