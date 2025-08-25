@@ -59,34 +59,41 @@ export class QuantumService {
     }
   }
 
-  private async generateClassicalBaseline(distanceMatrix: number[]): Promise<number[]> {
-    const n = distanceMatrix.length
+  private async generateClassicalBaseline(distanceMatrix: number[][]): Promise<number[]> {
+    const n = distanceMatrix.length;
 
     // Nearest neighbor construction
-    const tour = [0]
-    const unvisited = new Set(Array.from({ length: n - 1 }, (_, i) => i + 1))
-    let current = 0
+    const tour = [0];
+    const unvisited = new Set(Array.from({ length: n - 1 }, (_, i) => i + 1));
+    let current = 0;
 
     while (unvisited.size > 0) {
-      let nearest = -1
-      let minDistance = Number.POSITIVE_INFINITY
+      let nearest = -1;
+      let minDistance = Number.POSITIVE_INFINITY;
 
+      // Correctly find the nearest city
       for (const city of unvisited) {
-        if (distanceMatrix[current][city] < minDistance) {
-          minDistance = distanceMatrix[current][city]
-          nearest = city
+        if (distanceMatrix[current] && distanceMatrix[current][city] < minDistance) {
+          minDistance = distanceMatrix[current][city];
+          nearest = city;
         }
       }
 
-      tour.push(nearest)
-      unvisited.delete(nearest)
-      current = nearest
+      // Handle cases where no nearest city is found
+      if (nearest === -1) {
+        // As a fallback, just take the first unvisited city
+        nearest = unvisited.values().next().value;
+      }
+
+      tour.push(nearest);
+      unvisited.delete(nearest);
+      current = nearest;
     }
 
-    tour.push(0) // Return to depot
+    tour.push(0); // Return to depot
 
     // Apply 3-opt improvement
-    return this.threeOptImprovement(tour, distanceMatrix)
+    return this.threeOptImprovement(tour, distanceMatrix);
   }
 
   private async generateWarmStarts(baseline: number[], distanceMatrix: number[][], count: number): Promise<number[][]> {
@@ -241,110 +248,80 @@ export class QuantumService {
     return evaluated.slice(0, eliteCount).map((item) => item.tour)
   }
 
-  private localSearchRefinement(tour: number[], distanceMatrix: number[]): number[] {
-    let refined = this.twoOptImprovement(tour, distanceMatrix)
-    refined = this.threeOptImprovement(refined, distanceMatrix)
-    return refined
+  private localSearchRefinement(tour: number[], distanceMatrix: number[][]): number[] {
+    let refined = this.twoOptImprovement(tour, distanceMatrix);
+    refined = this.threeOptImprovement(refined, distanceMatrix);
+    return refined;
   }
 
-  private threeOptImprovement(tour: number[], distanceMatrix: number[]): number[] {
-    const n = tour.length - 1
-    let improved = true
-    let currentTour = [...tour]
-
+  private threeOptImprovement(tour: number[], distanceMatrix: number[][]): number[] {
+    let bestTour = [...tour];
+    let improved = true;
     while (improved) {
-      improved = false
-
-      for (let i = 1; i < n - 2; i++) {
-        for (let j = i + 1; j < n - 1; j++) {
-          for (let k = j + 1; k < n; k++) {
-            const currentLength =
-              distanceMatrix[currentTour[i - 1]][currentTour[i]] +
-              distanceMatrix[currentTour[j]][currentTour[j + 1]] +
-              distanceMatrix[currentTour[k]][currentTour[k + 1]]
-
-            // Try different 3-opt reconnections
-            const reconnections = this.generate3OptReconnections(currentTour, i, j, k)
-
-            for (const reconnection of reconnections) {
-              const newLength =
-                distanceMatrix[reconnection[i - 1]][reconnection[i]] +
-                distanceMatrix[reconnection[j]][reconnection[j + 1]] +
-                distanceMatrix[reconnection[k]][reconnection[k + 1]]
-
-              if (newLength < currentLength) {
-                currentTour = reconnection
-                improved = true
-                break
+      improved = false;
+      for (let i = 1; i < bestTour.length - 2 && !improved; i++) {
+        for (let j = i + 1; j < bestTour.length - 1 && !improved; j++) {
+          for (let k = j + 1; k < bestTour.length && !improved; k++) {
+            const reconnections = this.generate3OptReconnections(bestTour, i, j, k);
+            for (const newTour of reconnections) {
+              if (this.calculateTourLength(newTour, distanceMatrix) < this.calculateTourLength(bestTour, distanceMatrix)) {
+                bestTour = newTour;
+                improved = true;
+                break;
               }
             }
-
-            if (improved) break
           }
-          if (improved) break
         }
-        if (improved) break
       }
     }
-
-    return currentTour
+    return bestTour;
   }
 
   private generate3OptReconnections(tour: number[], i: number, j: number, k: number): number[][] {
-    const reconnections: number[][] = []
+    const segment1 = tour.slice(0, i);
+    const segment2 = tour.slice(i, j + 1);
+    const segment3 = tour.slice(j + 1, k + 1);
+    const segment4 = tour.slice(k + 1);
 
-    // Basic 3-opt move (reverse middle segment)
-    const variant1 = [...tour]
-    for (let idx = i; idx <= j; idx++) {
-      variant1[idx] = tour[j - (idx - i)]
-    }
-    reconnections.push(variant1)
+    // All 7 possible 3-opt reconnections (excluding the identity)
+    const reconnections = [
+      // 2-opt moves
+      [...segment1, ...segment2.reverse(), ...segment3, ...segment4],
+      [...segment1, ...segment2, ...segment3.reverse(), ...segment4],
+      [...segment1, ...segment3, ...segment2, ...segment4],
+      // 3-opt moves
+      [...segment1, ...segment3, ...segment2.reverse(), ...segment4],
+      [...segment1, ...segment3.reverse(), ...segment2, ...segment4],
+      [...segment1, ...segment3.reverse(), ...segment2.reverse(), ...segment4],
+      [...segment1, ...segment2.reverse(), ...segment3.reverse(), ...segment4],
+    ];
 
-    // Another 3-opt variant (reverse last segment)
-    const variant2 = [...tour]
-    for (let idx = j + 1; idx <= k; idx++) {
-      variant2[idx] = tour[k - (idx - j - 1)]
-    }
-    reconnections.push(variant2)
-
-    return reconnections
+    return reconnections;
   }
 
-  private twoOptImprovement(tour: number[], distanceMatrix: number[]): number[] {
-    const n = tour.length - 1 // Exclude the duplicate depot at the end
-    let improved = true
-    let currentTour = [...tour]
-
+  private twoOptImprovement(tour: number[], distanceMatrix: number[][]): number[] {
+    let bestTour = [...tour];
+    let improved = true;
     while (improved) {
-      improved = false
-
-      for (let i = 1; i < n - 1; i++) {
-        for (let j = i + 1; j < n; j++) {
-          // Calculate current distance
-          const currentDist =
-            distanceMatrix[currentTour[i - 1]][currentTour[i]] + distanceMatrix[currentTour[j]][currentTour[j + 1]]
-
-          // Calculate new distance after 2-opt swap
-          const newDist =
-            distanceMatrix[currentTour[i - 1]][currentTour[j]] + distanceMatrix[currentTour[i]][currentTour[j + 1]]
-
-          if (newDist < currentDist) {
-            // Perform 2-opt swap
-            const newTour = [...currentTour]
-            for (let idx = i; idx <= j; idx++) {
-              newTour[idx] = currentTour[j - (idx - i)]
-            }
-            currentTour = newTour
-            improved = true
+      improved = false;
+      for (let i = 1; i < bestTour.length - 2 && !improved; i++) {
+        for (let j = i + 1; j < bestTour.length - 1 && !improved; j++) {
+          const newTour = [
+            ...bestTour.slice(0, i),
+            ...bestTour.slice(i, j + 1).reverse(),
+            ...bestTour.slice(j + 1),
+          ];
+          if (this.calculateTourLength(newTour, distanceMatrix) < this.calculateTourLength(bestTour, distanceMatrix)) {
+            bestTour = newTour;
+            improved = true;
           }
         }
       }
     }
-
-    return currentTour
+    return bestTour;
   }
 
-  private calculateTourLength(tour: number[], distanceMatrix: number[]): number {
+  private calculateTourLength(tour: number[], distanceMatrix: number[][]): number {
     let length = 0
     for (let i = 0; i < tour.length - 1; i++) {
       length += distanceMatrix[tour[i]][tour[i + 1]]
