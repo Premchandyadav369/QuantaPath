@@ -29,6 +29,7 @@ import { LeafletMap } from "@/components/leaflet-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { SimulationControls } from "@/components/simulation-controls"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
@@ -91,6 +92,11 @@ export function InteractiveMap() {
   const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
+
+  // Simulation state
+  const [isSimulating, setIsSimulating] = useState(false)
+  const [simulationTime, setSimulationTime] = useState(0) // 0 to 1
+  const [simulationSpeed, setSimulationSpeed] = useState(5) // 1 to 10
 
   const [quantumParams, setQuantumParams] = useState({
     use: true,
@@ -312,6 +318,46 @@ export function InteractiveMap() {
 
     setIsOptimizing(false)
   }, [stops, quantumParams, classicalParams])
+
+  // Simulation handlers
+  const handleToggleSimulation = () => {
+    if (simulationTime >= 1) {
+      setSimulationTime(0);
+    }
+    setIsSimulating(!isSimulating);
+  };
+
+  const handleSpeedChange = (speed: number) => {
+    setSimulationSpeed(speed);
+  };
+
+  const handleResetSimulation = () => {
+    setIsSimulating(false);
+    setSimulationTime(0);
+  };
+
+  // Effect for running the simulation
+  useEffect(() => {
+    if (isSimulating) {
+      const interval = setInterval(() => {
+        setSimulationTime(prevTime => {
+          const newTime = prevTime + 0.0005 * simulationSpeed;
+          if (newTime >= 1) {
+            setIsSimulating(false);
+            return 1;
+          }
+          return newTime;
+        });
+      }, 16); // ~60fps
+
+      return () => clearInterval(interval);
+    }
+  }, [isSimulating, simulationSpeed]);
+
+  // Reset simulation when selected route changes
+  useEffect(() => {
+    handleResetSimulation();
+  }, [selectedRoute]);
 
   const exportResults = useCallback(() => {
     const exportData = {
@@ -547,6 +593,8 @@ export function InteractiveMap() {
                   onMapReady={(map) => (mapRef.current = map)}
                   searchedLocation={searchedLocation}
                   stopsForRoutes={processedStops}
+                  simulationTime={simulationTime}
+                  isSimulating={isSimulating}
                 />
 
                 {/* Map Controls */}
@@ -636,6 +684,19 @@ export function InteractiveMap() {
               </>
             )}
           </Button>
+
+          {/* Simulation Controls */}
+          {routes.length > 0 && (
+            <SimulationControls
+              isSimulating={isSimulating}
+              simulationSpeed={simulationSpeed}
+              onToggleSimulation={handleToggleSimulation}
+              onSpeedChange={handleSpeedChange}
+              onResetSimulation={handleResetSimulation}
+              isOptimizing={isOptimizing}
+              selectedRoute={!!selectedRoute}
+            />
+          )}
 
           {/* Results */}
           {routes.length > 0 && (

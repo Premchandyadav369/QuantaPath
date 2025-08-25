@@ -15,6 +15,8 @@ interface LeafletMapProps {
   isDepotMode?: boolean // Added depot mode prop
   onMapReady?: (map: any) => void;
   searchedLocation?: { lat: number; lng: number; name: string } | null;
+  simulationTime: number;
+  isSimulating: boolean;
 }
 
 export function LeafletMap({
@@ -29,13 +31,17 @@ export function LeafletMap({
   isDepotMode = false, // Added depot mode with default value
   onMapReady,
   searchedLocation,
+  simulationTime,
+  isSimulating,
 }: LeafletMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
   const routeLinesRef = useRef<any[]>([])
   const searchedMarkerRef = useRef<any>(null)
+  const vehicleMarkerRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [routePolyline, setRoutePolyline] = useState<any>(null)
 
   // Load Leaflet dynamically
   useEffect(() => {
@@ -208,44 +214,18 @@ export function LeafletMap({
     // Clear existing route lines
     routeLinesRef.current.forEach((line) => map.removeLayer(line));
     routeLinesRef.current = [];
+    setRoutePolyline(null);
 
-    const fetchAndDrawRoute = async (route) => {
+    const drawRoute = async (route) => {
       const color = getRouteColor(route.solver, route.name);
       const isSelected = selectedRoute?.name === route.name;
 
-      if (!isSelected) {
-        // Draw non-selected routes as straight lines
-        const routeCoords = route.tour
-          .map((stopIndex) => {
-            const stop = stopsForRoutes[stopIndex];
-            return stop ? [stop.lat, stop.lng] : null;
-          })
-          .filter(Boolean);
-
-        if (routeCoords.length < 2) return;
-
-        const dashArray = route.name.includes("Simulated") ? "10,5" : route.solver === "classical" ? "5,5" : undefined;
-        const polyline = L.polyline(routeCoords, {
-          color,
-          weight: 2,
-          opacity: 0.6,
-          dashArray,
-        }).addTo(map);
-        routeLinesRef.current.push(polyline);
-        return;
-      }
-
       // For selected route, fetch and draw the real road path
-      for (let i = 0; i < route.tour.length - 1; i++) {
-        const startStop = stopsForRoutes[route.tour[i]];
-        const endStop = stopsForRoutes[route.tour[i + 1]];
+      if (isSelected) {
+        const tourStops = route.tour.map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
+        if (tourStops.length < 2) return;
 
-        if (!startStop || !endStop) continue;
-
-        const coordinates = [
-          [startStop.lng, startStop.lat],
-          [endStop.lng, endStop.lat],
-        ];
+        const coordinates = tourStops.map(stop => [stop.lng, stop.lat]);
 
         try {
           const response = await fetch("/api/directions", {
@@ -254,58 +234,98 @@ export function LeafletMap({
             body: JSON.stringify({ coordinates }),
           });
 
-          if (!response.ok) {
-            throw new Error(`Failed to fetch directions: ${response.statusText}`);
-          }
+          if (!response.ok) throw new Error(`Failed to fetch directions: ${response.statusText}`);
 
           const geojson = await response.json();
+          setRoutePolyline(geojson); // Save for simulation
+
           const routeLayer = L.geoJSON(geojson, {
-            style: {
-              color,
-              weight: 4,
-              opacity: 1,
-            },
+            style: { color, weight: 4, opacity: 1 },
           }).addTo(map);
           routeLinesRef.current.push(routeLayer);
 
-          // Add arrow
-          if (geojson.features && geojson.features[0] && geojson.features[0].geometry.coordinates) {
-            const coords = geojson.features[0].geometry.coordinates;
-            if (coords.length > 1) {
-              const midIndex = Math.floor(coords.length / 2);
-              const start = [coords[midIndex-1][1], coords[midIndex-1][0]];
-              const end = [coords[midIndex][1], coords[midIndex][0]];
-              const bearing = calculateBearing(start[0], start[1], end[0], end[1]);
-              const arrowIcon = L.divIcon({
-                className: "route-arrow",
-                html: `<div class="arrow-icon" style="transform: rotate(${bearing}deg)">➤</div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10],
-              });
-              const arrowMarker = L.marker([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], { icon: arrowIcon }).addTo(map);
-              routeLinesRef.current.push(arrowMarker);
-            }
-          }
-
         } catch (error) {
-          console.error("Error fetching route geometry:", error);
-          // Fallback to straight line
-          const routeCoords = [[startStop.lat, startStop.lng], [endStop.lat, endStop.lng]];
-          const polyline = L.polyline(routeCoords, {
-            color: "red", // Indicate error
-            weight: 4,
-            opacity: 1,
-          }).addTo(map);
+          console.error("Error fetching route geometry, falling back to straight lines:", error);
+          const routeCoords = tourStops.map(stop => [stop.lat, stop.lng]);
+          const polyline = L.polyline(routeCoords, { color: "red", weight: 4, opacity: 1 }).addTo(map);
           routeLinesRef.current.push(polyline);
         }
+      } else {
+        // Draw non-selected routes as straight lines
+        const routeCoords = route.tour.map(stopIndex => {
+          const stop = stopsForRoutes[stopIndex];
+          return stop ? [stop.lat, stop.lng] : null;
+        }).filter(Boolean);
+
+        if (routeCoords.length < 2) return;
+
+        const dashArray = route.name.includes("Simulated") ? "10,5" : route.solver === "classical" ? "5,5" : undefined;
+        const polyline = L.polyline(routeCoords, { color, weight: 2, opacity: 0.6, dashArray }).addTo(map);
+        routeLinesRef.current.push(polyline);
       }
     };
 
     routes.forEach((route) => {
       if (!route.feasible || route.tour.length === 0) return;
-      fetchAndDrawRoute(route);
+      drawRoute(route);
     });
   }, [routes, selectedRoute, stopsForRoutes, isLoaded]);
+
+  // Effect for simulating vehicle movement
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    // Clean up vehicle marker if not simulating or no polyline
+    if (!isSimulating || !routePolyline || simulationTime === 0) {
+      if (vehicleMarkerRef.current) {
+        map.removeLayer(vehicleMarkerRef.current);
+        vehicleMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const getPointAtDistance = (coords, distance) => {
+      let totalDistance = 0;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const start = L.latLng(coords[i][1], coords[i][0]);
+        const end = L.latLng(coords[i + 1][1], coords[i + 1][0]);
+        const segmentDist = start.distanceTo(end);
+        if (totalDistance + segmentDist >= distance) {
+          const ratio = (distance - totalDistance) / segmentDist;
+          const lat = start.lat + (end.lat - start.lat) * ratio;
+          const lng = start.lng + (end.lng - start.lng) * ratio;
+          return L.latLng(lat, lng);
+        }
+        totalDistance += segmentDist;
+      }
+      const lastPoint = coords[coords.length - 1];
+      return L.latLng(lastPoint[1], lastPoint[0]);
+    };
+
+    const coords = routePolyline.features[0].geometry.coordinates;
+    let totalRouteDistance = 0;
+    for (let i = 0; i < coords.length - 1; i++) {
+      totalRouteDistance += L.latLng(coords[i][1], coords[i][0]).distanceTo(L.latLng(coords[i+1][1], coords[i+1][0]));
+    }
+
+    const currentDist = simulationTime * totalRouteDistance;
+    const point = getPointAtDistance(coords, currentDist);
+
+    if (!vehicleMarkerRef.current) {
+      const vehicleIcon = L.divIcon({
+        className: 'vehicle-marker',
+        html: '🚚',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      vehicleMarkerRef.current = L.marker(point, { icon: vehicleIcon, zIndexOffset: 1000 }).addTo(map);
+    } else {
+      vehicleMarkerRef.current.setLatLng(point);
+    }
+
+  }, [simulationTime, isSimulating, routePolyline, isLoaded]);
 
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
     if (solver === "quantum") return "#7B2CBF"
@@ -442,6 +462,12 @@ export function LeafletMap({
         /* Enhanced route visualization */
         .leaflet-interactive {
           cursor: crosshair;
+        }
+
+        .vehicle-marker {
+          font-size: 28px;
+          text-shadow: 0 0 6px white, 0 0 3px white;
+          transition: transform 0.1s linear;
         }
       `}</style>
     </>
