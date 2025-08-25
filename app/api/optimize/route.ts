@@ -97,6 +97,8 @@ export async function POST(request: NextRequest) {
       stopsWithHubs: stopsWithHubs,
       diagnostics: {
         feasibilityRate: allCandidates.length > 0 ? validCandidates.length / allCandidates.length : 0,
+        distanceSource: masterMatrix.source,
+        warnings: masterMatrix.source === 'haversine' ? ['API keys not configured, using less accurate Haversine distance.'] : [],
       },
     }
 

@@ -88,12 +88,12 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
 
   const quantumCO2 = bestQuantum.length > 0 ? Math.min(...bestQuantum.map((d) => d.co2Emissions)) : 0
   const classicalCO2 = bestClassical.length > 0 ? Math.min(...bestClassical.map((d) => d.co2Emissions)) : 0
-  const co2Savings = classicalCO2 - quantumCO2
-  const co2SavingsPercent = classicalCO2 > 0 ? (co2Savings / classicalCO2) * 100 : 0
+  const co2Savings = classicalCO2 > 0 ? classicalCO2 - quantumCO2 : 0;
+  const co2SavingsPercent = classicalCO2 > 0 ? (co2Savings / classicalCO2) * 100 : 0;
 
-  const quantumCost = bestQuantum.length > 0 ? Math.min(...bestQuantum.map((d) => d.fuelCost)) : 0
-  const classicalCost = bestClassical.length > 0 ? Math.min(...bestClassical.map((d) => d.fuelCost)) : 0
-  const costSavings = classicalCost - quantumCost
+  const quantumCost = bestQuantum.length > 0 ? Math.min(...bestQuantum.map((d) => d.fuelCost)) : 0;
+  const classicalCost = bestClassical.length > 0 ? Math.min(...bestClassical.map((d) => d.fuelCost)) : 0;
+  const costSavings = classicalCost > 0 ? classicalCost - quantumCost : 0;
 
   // Annual projections (assuming 250 working days, 5 deliveries per day)
   const annualDeliveries = 250 * 5
@@ -104,12 +104,12 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
   // Pie chart data for emissions breakdown
   const emissionBreakdown = [
     { name: "Quantum Optimized", value: quantumCO2, color: "#10b981" },
-    { name: "CO₂ Saved", value: co2Savings, color: "#22c55e" },
+    { name: "CO₂ Saved", value: co2Savings > 0 ? co2Savings : 0, color: "#22c55e" },
   ]
 
   // Comparison data for different vehicle types
   const vehicleComparison = vehicleTypes.map((vType) => {
-    const bestRoute = Math.min(...routes.map((r) => r.length))
+    const bestRoute = routes.length > 0 ? Math.min(...routes.map((r) => r.length)) : 0;
     return {
       vehicle: vType.name,
       co2: Number.parseFloat((bestRoute * vType.co2PerKm).toFixed(2)),
@@ -126,9 +126,12 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
             Environmental Impact Calculator
           </CardTitle>
           <div className="flex gap-2">
-            <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800">
+            <Badge variant={co2SavingsPercent >= 0 ? "secondary" : "destructive"} className="flex items-center gap-1">
               <TreePine className="w-3 h-3" />
-              {co2SavingsPercent.toFixed(1)}% CO₂ Reduction
+              {co2SavingsPercent >= 0
+                ? `${co2SavingsPercent.toFixed(1)}% CO₂ Reduction`
+                : `${Math.abs(co2SavingsPercent).toFixed(1)}% CO₂ Increase`
+              }
             </Badge>
             <Badge variant="outline">
               {vehicle.icon} {vehicle.name}
@@ -224,26 +227,26 @@ export function CarbonFootprintCalculator({ routes, selectedRoute }: CarbonFootp
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-green-600">{co2Savings.toFixed(2)}</div>
-                  <p className="text-xs text-muted-foreground">CO₂ Saved (kg)</p>
+                  <div className={`text-2xl font-bold ${co2Savings >= 0 ? "text-green-600" : "text-red-600"}`}>{co2Savings.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">{co2Savings >= 0 ? "CO₂ Saved (kg)" : "CO₂ Increased (kg)"}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-blue-600">₹{costSavings.toFixed(2)}</div>
-                  <p className="text-xs text-muted-foreground">Fuel Cost Saved</p>
+                  <div className={`text-2xl font-bold ${costSavings >= 0 ? "text-blue-600" : "text-red-600"}`}>₹{costSavings.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">{costSavings >= 0 ? "Fuel Cost Saved" : "Fuel Cost Increased"}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-green-700">{(co2Savings / 22).toFixed(1)}</div>
-                  <p className="text-xs text-muted-foreground">Trees Equivalent</p>
+                  <div className={`text-2xl font-bold ${co2Savings >= 0 ? "text-green-700" : "text-red-700"}`}>{(co2Savings / 22).toFixed(1)}</div>
+                  <p className="text-xs text-muted-foreground">{co2Savings >= 0 ? "Trees Equivalent" : "Trees Deficit"}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-purple-600">{co2SavingsPercent.toFixed(1)}%</div>
-                  <p className="text-xs text-muted-foreground">Reduction</p>
+                  <div className={`text-2xl font-bold ${co2SavingsPercent >= 0 ? "text-purple-600" : "text-red-600"}`}>{co2SavingsPercent.toFixed(1)}%</div>
+                  <p className="text-xs text-muted-foreground">{co2SavingsPercent >= 0 ? "Reduction" : "Increase"}</p>
                 </CardContent>
               </Card>
             </div>
