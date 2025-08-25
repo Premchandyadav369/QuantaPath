@@ -32,20 +32,24 @@ import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import { SimulationControls } from "@/components/simulation-controls"
 import { OptimizedRouteMap } from "@/components/optimized-route-map"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
   const [stops, setStops] = useState<DeliveryStop[]>([
-    { id: "depot", name: "Distribution Center", lat: 16.5062, lng: 80.648, isDepot: true },
+    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
+    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
     { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
     { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
     { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
     { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
+    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
+    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
   ])
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
   const [showOptimizedMap, setShowOptimizedMap] = useState(false)
 
-  const [isDepotMode, setIsDepotMode] = useState(false)
+  const [isHubMode, setIsHubMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
@@ -95,6 +99,7 @@ export function InteractiveMap() {
   const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
+  const [mapType, setMapType] = useState<string>("Optimized Route Overview")
 
   // Simulation state
   const [isSimulating, setIsSimulating] = useState(false)
@@ -156,37 +161,32 @@ export function InteractiveMap() {
 
   const handleMapClick = useCallback(
     (lat: number, lng: number) => {
-      if (isOptimizing) return
+      if (isOptimizing) return;
 
-      if (isDepotMode) {
-        // Move depot to new location
-        setStops((prev) =>
-          prev.map((stop) => (stop.isDepot ? { ...stop, lat, lng, name: "Distribution Center" } : stop)),
-        )
-        setIsDepotMode(false) // Exit depot mode after placing
-        setError(null)
-        return
-      }
-
-      // Add regular delivery stop
       const newStop: DeliveryStop = {
         id: `stop${Date.now()}`,
-        name: `Stop ${stops.filter((s) => !s.isDepot).length + 1}`,
+        name: isHubMode
+          ? `Hub ${stops.filter(s => s.isDepot).length + 1}`
+          : `Stop ${stops.filter(s => !s.isDepot).length + 1}`,
         lat,
         lng,
+        isDepot: isHubMode,
+      };
+
+      setStops(prev => [...prev, newStop]);
+      if (isHubMode) {
+        setIsHubMode(false); // Exit hub mode after placing a hub
       }
-
-      setStops((prev) => [...prev, newStop])
-      setError(null)
+      setError(null);
     },
-    [stops, isOptimizing, isDepotMode],
-  )
+    [stops, isOptimizing, isHubMode]
+  );
 
-  const toggleDepotMode = useCallback(() => {
+  const toggleHubMode = useCallback(() => {
     if (isOptimizing) return
-    setIsDepotMode(!isDepotMode)
+    setIsHubMode(!isHubMode)
     setError(null)
-  }, [isOptimizing, isDepotMode])
+  }, [isOptimizing, isHubMode])
 
   const removeStop = useCallback(
     (id: string) => {
@@ -217,9 +217,17 @@ export function InteractiveMap() {
   }, [isOptimizing])
 
   const optimizeRoutes = useCallback(async () => {
-    if (stops.length < 3) {
-      setError("Please add at least 2 delivery stops to optimize routes")
-      return
+    const hubs = stops.filter(s => s.isDepot);
+    const deliveryStops = stops.filter(s => !s.isDepot);
+
+    if (hubs.length === 0) {
+      setError("Please add at least one hub to start the optimization.");
+      return;
+    }
+
+    if (deliveryStops.length < 2) {
+      setError("Please add at least 2 delivery stops to optimize routes.");
+      return;
     }
 
     setIsOptimizing(true)
@@ -244,25 +252,58 @@ export function InteractiveMap() {
 
       setOptimizationStatus("Building distance matrix...")
 
-      const request: OptimizationRequest = {
-        stops,
-        optimizeFor: "distance",
-        distanceSource: "openrouteservice",
-        quantum: quantumParams,
-        classical: classicalParams,
-        seed: 42,
+      const hubs = stops.filter(s => s.isDepot);
+      const deliveryStops = stops.filter(s => !s.isDepot);
+
+      // Assign each stop to the nearest hub
+      const stopsByHub = deliveryStops.reduce((acc, stop) => {
+        let nearestHubId = '';
+        let minDistance = Infinity;
+
+        hubs.forEach(hub => {
+          const distance = getHaversineDistance(stop.lat, stop.lng, hub.lat, hub.lng);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestHubId = hub.id;
+          }
+        });
+
+        if (!acc[nearestHubId]) {
+          acc[nearestHubId] = [];
+        }
+        acc[nearestHubId].push(stop);
+        return acc;
+      }, {} as Record<string, DeliveryStop[]>);
+
+      const allRoutes: RouteResult[] = [];
+
+      for (const hubId in stopsByHub) {
+        const hub = hubs.find(h => h.id === hubId)!;
+        const hubStops = [hub, ...stopsByHub[hubId]];
+
+        const request: OptimizationRequest = {
+          stops: hubStops,
+          optimizeFor: "distance",
+          distanceSource: "openrouteservice",
+          quantum: quantumParams,
+          classical: classicalParams,
+          seed: 42,
+        };
+
+        const response = await apiClient.optimizeRoutes(request);
+        const routesWithHubId = response.candidates.map(route => ({
+          ...route,
+          hubId: hub.id,
+        }));
+        allRoutes.push(...routesWithHubId);
       }
-
-      setOptimizationStatus("Running optimization algorithms...")
-
-      const response = await apiClient.optimizeRoutes(request)
 
       clearInterval(progressInterval)
       setOptimizationProgress(100)
       setOptimizationStatus("Optimization complete!")
 
-      setRoutes(response.candidates)
-      setSelectedRoute(response.candidates[response.bestIndex])
+      setRoutes(allRoutes)
+      setSelectedRoute(allRoutes.length > 0 ? allRoutes.reduce((best, current) => (current.length < best.length ? current : best)) : null)
       setProcessedStops(stops)
       setShowOptimizedMap(true)
 
@@ -274,51 +315,6 @@ export function InteractiveMap() {
     } catch (error) {
       console.error("Optimization failed:", error)
       setError(error instanceof Error ? error.message : "Optimization failed")
-
-      // Fallback to mock results for demo
-      const mockRoutes: RouteResult[] = [
-        {
-          solver: "quantum",
-          name: `QAOA p=${quantumParams.p}`,
-          tour: [0, 1, 2, 3, 0],
-          length: 24.7 + Math.random() * 2,
-          feasible: true,
-          violations: { pos: 0, city: 0 },
-          runtimeMs: 1500 + Math.random() * 1000,
-          parameters: quantumParams,
-        },
-      ]
-
-      if (classicalParams.nn) {
-        mockRoutes.push({
-          solver: "classical",
-          name: "Nearest Neighbor + 2-opt",
-          tour: [0, 2, 1, 3, 0],
-          length: 26.3 + Math.random() * 2,
-          feasible: true,
-          violations: { pos: 0, city: 0 },
-          runtimeMs: 45 + Math.random() * 50,
-        })
-      }
-
-      if (classicalParams.anneal) {
-        mockRoutes.push({
-          solver: "classical",
-          name: "Simulated Annealing",
-          tour: [0, 3, 1, 2, 0],
-          length: 25.8 + Math.random() * 2,
-          feasible: true,
-          violations: { pos: 0, city: 0 },
-          runtimeMs: 120 + Math.random() * 100,
-        })
-      }
-
-      setRoutes(mockRoutes)
-      setSelectedRoute(mockRoutes[0])
-      setProcessedStops(stops)
-      setShowOptimizedMap(true)
-      setOptimizationProgress(0)
-      setOptimizationStatus("")
     }
 
     setIsOptimizing(false)
@@ -448,11 +444,16 @@ export function InteractiveMap() {
     setSearchQuery("");
   };
 
-  const addSearchedLocationAsDepot = () => {
+  const addSearchedLocationAsHub = () => {
     if (!searchedLocation) return;
-    setStops((prev) =>
-      prev.map((stop) => stop.isDepot ? { ...stop, lat: searchedLocation.lat, lng: searchedLocation.lng, name: searchedLocation.name } : stop)
-    );
+    const newHub: DeliveryStop = {
+      id: `hub${Date.now()}`,
+      name: searchedLocation.name,
+      lat: searchedLocation.lat,
+      lng: searchedLocation.lng,
+      isDepot: true,
+    };
+    setStops((prev) => [...prev, newHub]);
     setSearchedLocation(null);
     setSearchQuery("");
   };
@@ -464,10 +465,32 @@ export function InteractiveMap() {
     )
   }
 
-  const getRouteColor = (solver: "quantum" | "classical", name: string) => {
+  const routeColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"];
+
+  const getRouteColor = (solver: "quantum" | "classical", name: string, hubId?: string) => {
+    if (hubId) {
+      const hubs = stops.filter(s => s.isDepot);
+      const hubIndex = hubs.findIndex(h => h.id === hubId);
+      if (hubIndex !== -1) {
+        return routeColors[hubIndex % routeColors.length];
+      }
+    }
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
     return "#0D1B2A"
+  }
+
+  const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
   }
 
   return (
@@ -514,10 +537,10 @@ export function InteractiveMap() {
                       <span className="font-semibold">Add Stops:</span> Click anywhere on the map to add a delivery location.
                     </li>
                     <li>
-                      <span className="font-semibold">Set Depot:</span> Click the <MapPin className="w-4 h-4 inline-block mx-1" /> button, then click the map to set your starting point.
+                      <span className="font-semibold">Add Hub:</span> Click the <MapPin className="w-4 h-4 inline-block mx-1" /> button, then click the map to add a hub.
                     </li>
                     <li>
-                      <span className="font-semibold">Optimize:</span> Once you have at least 3 stops, click &quot;Run Optimization&quot;.
+                      <span className="font-semibold">Optimize:</span> Once you have at least 1 hub and 2 stops, click &quot;Run Optimization&quot;.
                     </li>
                     <li>
                       <span className="font-semibold">Interact:</span> Drag stops to move them, or click the trash icon to remove them.
@@ -553,7 +576,7 @@ export function InteractiveMap() {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={addSearchedLocationAsStop}>Add Stop</Button>
-                    <Button size="sm" variant="outline" onClick={addSearchedLocationAsDepot}>Set Depot</Button>
+                    <Button size="sm" variant="outline" onClick={addSearchedLocationAsHub}>Set Hub</Button>
                   </div>
                 </div>
               )}
@@ -565,11 +588,11 @@ export function InteractiveMap() {
                 </div>
               )}
 
-              {isDepotMode && (
+              {isHubMode && (
                 <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
                   <span className="text-sm text-primary font-medium">
-                    Depot placement mode active - Click to set new depot location
+                    Hub placement mode active - Click map to add a new hub.
                   </span>
                 </div>
               )}
@@ -594,7 +617,7 @@ export function InteractiveMap() {
                   onStopRemove={removeStop}
                   onStopMove={handleStopMove}
                   isOptimizing={isOptimizing}
-                  isDepotMode={isDepotMode}
+                  isDepotMode={isHubMode}
                   onMapReady={(map) => (mapRef.current = map)}
                   searchedLocation={searchedLocation}
                   stopsForRoutes={processedStops}
@@ -606,10 +629,10 @@ export function InteractiveMap() {
                 <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
                   <Button
                     size="sm"
-                    variant={isDepotMode ? "default" : "outline"}
-                    onClick={toggleDepotMode}
+                    variant={isHubMode ? "default" : "outline"}
+                    onClick={toggleHubMode}
                     disabled={isOptimizing}
-                    className={isDepotMode ? "bg-primary text-primary-foreground" : ""}
+                    className={isHubMode ? "bg-primary text-primary-foreground" : ""}
                   >
                     <MapPin className="w-4 h-4" />
                   </Button>
@@ -627,38 +650,50 @@ export function InteractiveMap() {
           {/* Stops List */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Delivery Stops ({stops.length})</CardTitle>
+              <CardTitle className="text-lg">Hubs & Stops</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Click <MapPin className="w-3 h-3 inline mx-1" /> to change depot location
+                Click <MapPin className="w-3 h-3 inline mx-1" /> to add new hubs
               </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              {stops.map((stop) => (
+              <h4 className="text-sm font-medium">Hubs ({stops.filter(s => s.isDepot).length})</h4>
+              {stops.filter(s => s.isDepot).map((hub) => (
+                <div key={hub.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-primary" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{hub.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {hub.lat.toFixed(4)}, {hub.lng.toFixed(4)}
+                      </span>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => removeStop(hub.id)} disabled={isOptimizing}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Separator />
+              <h4 className="text-sm font-medium">Stops ({stops.filter(s => !s.isDepot).length})</h4>
+              {stops.filter(s => !s.isDepot).map((stop) => (
                 <div key={stop.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${stop.isDepot ? "bg-primary" : "bg-accent"}`} />
+                    <div className="w-3 h-3 rounded-full bg-accent" />
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{stop.name}</span>
                       <span className="text-xs text-muted-foreground">
                         {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
                       </span>
                     </div>
-                    {stop.isDepot && (
-                      <Badge variant="secondary" className="text-xs">
-                        Depot
-                      </Badge>
-                    )}
                   </div>
-                  {!stop.isDepot && (
-                    <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button size="sm" variant="ghost" onClick={() => removeStop(stop.id)} disabled={isOptimizing}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               ))}
               <div className="text-xs text-muted-foreground pt-2 border-t">
                 <Plus className="w-3 h-3 inline mr-1" />
-                {isDepotMode ? "Click map to set depot" : "Click map to add stops"}
+                {isHubMode ? "Click map to set a new hub" : "Click map to add stops"}
               </div>
             </CardContent>
           </Card>
@@ -737,7 +772,7 @@ export function InteractiveMap() {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full mt-1"
-                          style={{ backgroundColor: getRouteColor(route.solver, route.name) }}
+                          style={{ backgroundColor: getRouteColor(route.solver, route.name, route.hubId) }}
                         />
                         <div className="flex-grow">
                           <span className="font-medium text-sm">{route.name}</span>
@@ -831,16 +866,36 @@ export function InteractiveMap() {
       {showOptimizedMap && selectedRoute && (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Route className="w-5 h-5" />
-              Optimized Route Overview
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Route className="w-5 h-5" />
+                Optimized Route Overview
+              </CardTitle>
+              <Select value={mapType} onValueChange={setMapType}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Select map type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Optimized Route Overview">Optimized Route Overview</SelectItem>
+                  <SelectItem value="HAWS-QAOA p=2">HAWS-QAOA p=2</SelectItem>
+                  <SelectItem value="Nearest Neighbor + 2-opt">Nearest Neighbor + 2-opt</SelectItem>
+                  <SelectItem value="Simulated Annealing">Simulated Annealing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-sm text-muted-foreground">
               The best route found by the optimization algorithms.
             </p>
           </CardHeader>
           <CardContent>
-            <OptimizedRouteMap stops={processedStops} route={selectedRoute} />
+            <OptimizedRouteMap
+              stops={processedStops}
+              route={
+                mapType === "Optimized Route Overview"
+                  ? selectedRoute
+                  : routes.find(r => r.name === mapType) || selectedRoute
+              }
+            />
           </CardContent>
         </Card>
       )}
