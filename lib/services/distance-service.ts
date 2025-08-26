@@ -161,6 +161,7 @@ export class DistanceService {
           locations: coordinates,
           metrics: ["distance", "duration"],
           units: "km",
+          ...(request.useTraffic && { departure_time: new Date().toISOString() }),
         }),
       })
 

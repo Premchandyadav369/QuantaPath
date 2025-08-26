@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+numpy
+qiskit~=1.2.0
+qiskit-aer~=0.17.0
+qiskit-algorithms~=0.3.0
+qiskit-optimization~=0.7.0
+scipy
+gunicorn

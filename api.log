@@ -1,0 +1,31 @@
+[2025-08-26 15:25:30 +0000] [6890] [INFO] Starting gunicorn 23.0.0
+[2025-08-26 15:25:30 +0000] [6890] [INFO] Listening at: http://0.0.0.0:5001 (6890)
+[2025-08-26 15:25:30 +0000] [6890] [INFO] Using worker: sync
+[2025-08-26 15:25:30 +0000] [6895] [INFO] Booting worker with pid: 6895
+--- Python Environment Diagnostics ---
+Python Executable: /home/jules/.pyenv/versions/3.12.11/bin/python3.12
+sys.path:
+  - /app/api
+  - /app
+  - /home/jules/.local/bin
+  - /home/jules/.pyenv/versions/3.12.11/lib/python312.zip
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12/lib-dynload
+  - /home/jules/.local/lib/python3.12/site-packages
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12/site-packages
+User site packages: /home/jules/.local/lib/python3.12/site-packages
+--- End Diagnostics ---
+[2025-08-26 15:25:30 +0000] [6896] [INFO] Booting worker with pid: 6896
+--- Python Environment Diagnostics ---
+Python Executable: /home/jules/.pyenv/versions/3.12.11/bin/python3.12
+sys.path:
+  - /app/api
+  - /app
+  - /home/jules/.local/bin
+  - /home/jules/.pyenv/versions/3.12.11/lib/python312.zip
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12/lib-dynload
+  - /home/jules/.local/lib/python3.12/site-packages
+  - /home/jules/.pyenv/versions/3.12.11/lib/python3.12/site-packages
+User site packages: /home/jules/.local/lib/python3.12/site-packages
+--- End Diagnostics ---

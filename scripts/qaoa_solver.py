@@ -31,7 +31,8 @@ try:
     from qiskit.utils import algorithm_globals
     from qiskit_algorithms.expectations import CVaRExpectation
     QISKIT_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Error importing Qiskit components: {e}", file=sys.stderr)
     QISKIT_AVAILABLE = False
 
 try:

@@ -120,6 +120,10 @@ export function InteractiveMap() {
     twoOpt: true,
     anneal: true,
     ortools: false,
+    vehicles: 1,
+    useTraffic: false,
+    evMode: false,
+    evRange: 300, // Default range in km
     simulatedAnnealingParams: {
       initialTemp: 100,
       coolingRate: 0.995,
