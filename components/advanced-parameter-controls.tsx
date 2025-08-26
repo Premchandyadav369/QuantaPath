@@ -28,6 +28,10 @@ interface ClassicalParams {
   twoOpt: boolean
   anneal: boolean
   ortools: boolean
+  vehicles: number
+  useTraffic: boolean
+  evMode: boolean
+  evRange: number
   simulatedAnnealingParams: {
     initialTemp: number
     coolingRate: number
@@ -339,6 +343,76 @@ export function AdvancedParameterControls({
                     </div>
                   </div>
                 </div>
+
+                <Separator />
+
+                {/* Use Live Traffic */}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="traffic-enable" className="text-sm">
+                    Use Live Traffic
+                  </Label>
+                  <Switch
+                    id="traffic-enable"
+                    checked={classicalParams.useTraffic}
+                    onCheckedChange={(checked) => updateClassicalParam("useTraffic", checked)}
+                    disabled={isOptimizing}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Number of Vehicles */}
+                <div className="space-y-2">
+                  <Label htmlFor="vehicles-input">Number of Vehicles</Label>
+                  <Input
+                    id="vehicles-input"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={classicalParams.vehicles}
+                    onChange={(e) => updateClassicalParam("vehicles", parseInt(e.target.value, 10))}
+                    disabled={isOptimizing}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Set the number of vehicles for the Vehicle Routing Problem (VRP).
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* EV Routing Parameters */}
+                <div className="space-y-3">
+                  <Label>EV Routing</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="ev-mode-enable" className="text-sm">
+                      EV Mode
+                    </Label>
+                    <Switch
+                      id="ev-mode-enable"
+                      checked={classicalParams.evMode}
+                      onCheckedChange={(checked) => updateClassicalParam("evMode", checked)}
+                      disabled={isOptimizing}
+                    />
+                  </div>
+                  {classicalParams.evMode && (
+                    <div className="space-y-2">
+                      <Label htmlFor="ev-range-input">Vehicle Range (km)</Label>
+                      <Input
+                        id="ev-range-input"
+                        type="number"
+                        min={50}
+                        max={1000}
+                        step={10}
+                        value={classicalParams.evRange}
+                        onChange={(e) => updateClassicalParam("evRange", parseInt(e.target.value, 10))}
+                        disabled={isOptimizing}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+
 
                 {/* Simulated Annealing Parameters */}
                 {classicalParams.anneal && (

@@ -132,10 +132,13 @@ export function LeafletMap({
     // Add new markers
     stops.forEach((stop) => {
       const isDepot = stop.isDepot
+      const isChargingStation = stop.isChargingStation
 
       const hubs = stops.filter(s => s.isDepot);
       let color = "#7B2CBF"; // Default color
-      if (!isDepot && stop.hubId) {
+      if (isChargingStation) {
+        color = "#F5A623"; // Gold color for charging stations
+      } else if (!isDepot && stop.hubId) {
         const hubIndex = hubs.findIndex(h => h.id === stop.hubId);
         if (hubIndex !== -1) {
           color = routeColors[hubIndex % routeColors.length];
@@ -144,12 +147,14 @@ export function LeafletMap({
 
       // Create custom icon
       const icon = L.divIcon({
-        className: `custom-marker ${isDepot ? "depot-marker" : "stop-marker"} ${isDepotMode && isDepot ? "depot-highlight" : ""}`,
+        className: `custom-marker ${isDepot ? "depot-marker" : isChargingStation ? "charger-marker" : "stop-marker"}`,
         html: `
           <div class="marker-content">
-            <div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}" style="background-color: ${color};"></div>
+             <div class="marker-pin ${isDepot ? "depot-pin" : "stop-pin"}" style="background-color: ${color};">
+              ${isChargingStation ? "⚡️" : ""}
+            </div>
             <div class="marker-label">${stop.name}</div>
-            ${!isDepot && !isOptimizing ? '<div class="marker-remove">×</div>' : ""}
+            ${!isDepot && !isChargingStation && !isOptimizing ? '<div class="marker-remove">×</div>' : ""}
           </div>
         `,
         iconSize: [40, 40],
@@ -232,8 +237,35 @@ export function LeafletMap({
       const color = getRouteColor(route.solver, route.name);
       const isSelected = selectedRoute?.name === route.name;
 
+      // Handle VRP routes (multiple polylines)
+      if (route.isVRP && Array.isArray(route.tour[0])) {
+        if (isSelected) {
+          (route.tour as number[][]).forEach((vehicleTour, index) => {
+            const tourStops = vehicleTour.map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
+            if (tourStops.length < 2) return;
+
+            const routeCoords = tourStops.map(stop => [stop.lat, stop.lng]);
+            const vehicleColor = routeColors[index % routeColors.length];
+            const polyline = L.polyline(routeCoords, { color: vehicleColor, weight: 4, opacity: 0.8 }).addTo(map);
+            routeLinesRef.current.push(polyline);
+          });
+        } else {
+           // Draw non-selected VRP routes as simplified straight lines
+          (route.tour as number[][]).forEach((vehicleTour, index) => {
+            const tourStops = vehicleTour.map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
+            if (tourStops.length < 2) return;
+            const routeCoords = tourStops.map(stop => [stop.lat, stop.lng]);
+            const vehicleColor = routeColors[index % routeColors.length];
+            const polyline = L.polyline(routeCoords, { color: vehicleColor, weight: 2, opacity: 0.6, dashArray: "5,5" }).addTo(map);
+            routeLinesRef.current.push(polyline);
+          });
+        }
+        return; // End drawing for this VRP route
+      }
+
+      // Handle standard TSP routes (single polyline)
       if (isSelected) {
-        const tourStops = route.tour.map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
+        const tourStops = (route.tour as number[]).map(stopIndex => stopsForRoutes[stopIndex]).filter(Boolean);
         if (tourStops.length < 2) return;
 
         let fullPolylineCoords = [];
@@ -297,7 +329,7 @@ export function LeafletMap({
 
       } else {
         // Draw non-selected routes as straight lines
-        const routeCoords = route.tour.map(stopIndex => {
+        const routeCoords = (route.tour as number[]).map(stopIndex => {
           const stop = stopsForRoutes[stopIndex];
           return stop ? [stop.lat, stop.lng] : null;
         }).filter(Boolean);

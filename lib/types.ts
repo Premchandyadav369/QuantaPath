@@ -6,6 +6,7 @@ export interface DeliveryStop {
   x?: number // Legacy support for SVG coordinates
   y?: number // Legacy support for SVG coordinates
   isDepot?: boolean
+  isChargingStation?: boolean
   priority?: number
   timeWindow?: {
     start: string
@@ -34,6 +35,10 @@ export interface OptimizationRequest {
     twoOpt: boolean
     anneal: boolean
     ortools: boolean
+    vehicles: number
+    useTraffic: boolean
+    evMode: boolean
+    evRange: number
     simulatedAnnealingParams?: {
       initialTemp: number
       coolingRate: number
@@ -46,7 +51,8 @@ export interface OptimizationRequest {
 export interface RouteResult {
   solver: "quantum" | "classical"
   name:string
-  tour: number[]
+  // A tour can be a single route for TSP or an array of routes for VRP
+  tour: number[] | number[][]
   length: number
   timeMinutes?: number
   feasible: boolean
@@ -57,6 +63,7 @@ export interface RouteResult {
   runtimeMs: number
   parameters?: Record<string, any>
   hubId?: string
+  isVRP?: boolean
 }
 
 export interface OptimizationResponse {
@@ -82,4 +89,5 @@ export interface DistanceMatrixRequest {
   stops: DeliveryStop[]
   mode: "distance" | "time"
   source: "google" | "openrouteservice" | "haversine"
+  useTraffic?: boolean
 }
