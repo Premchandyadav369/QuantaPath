@@ -26,12 +26,12 @@ import {
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
-import { LeafletMap } from "@/components/leaflet-map"
+import GoogleMapWrapper from "@/components/google-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import { SimulationControls } from "@/components/simulation-controls"
-import { OptimizedRouteMap } from "@/components/optimized-route-map"
+import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
@@ -100,6 +100,7 @@ export function InteractiveMap() {
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
   const [mapType, setMapType] = useState<string>("Optimized Route Overview")
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][] | null>(null);
 
   // Simulation state
   const [isSimulating, setIsSimulating] = useState(false)
@@ -330,6 +331,41 @@ export function InteractiveMap() {
     handleResetSimulation();
   }, [selectedRoute]);
 
+  useEffect(() => {
+    if (!selectedRoute) {
+      setRouteGeometry(null);
+      return;
+    }
+
+    const fetchRouteGeometry = async () => {
+      const fullGeometry: [number, number][] = [];
+      const tourStops = selectedRoute.tour.map(i => processedStops[i]).filter(Boolean);
+
+      for (let i = 0; i < tourStops.length - 1; i++) {
+        const start = tourStops[i];
+        const end = tourStops[i+1];
+        if (!start || !end) continue;
+
+        try {
+          const response = await fetch('/api/directions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: [[start.lng, start.lat], [end.lng, end.lat]] }),
+          });
+          const data = await response.json();
+          if (data.features && data.features[0]) {
+            fullGeometry.push(...data.features[0].geometry.coordinates);
+          }
+        } catch (error) {
+          console.error("Error fetching directions for segment:", error);
+        }
+      }
+      setRouteGeometry(fullGeometry);
+    };
+
+    fetchRouteGeometry();
+  }, [selectedRoute, processedStops]);
+
   const exportResults = useCallback(() => {
     const exportData = {
       timestamp: new Date().toISOString(),
@@ -556,21 +592,12 @@ export function InteractiveMap() {
                 </div>
               )}
 
-              <div className="relative">
-                <LeafletMap
+              <div className="relative h-[600px]">
+                <GoogleMapWrapper
                   stops={stops}
-                  routes={routes}
-                  selectedRoute={selectedRoute}
+                  optimizedTour={selectedRoute?.tour}
+                  routeGeometry={routeGeometry}
                   onMapClick={handleMapClick}
-                  onStopRemove={removeStop}
-                  onStopMove={handleStopMove}
-                  isOptimizing={isOptimizing}
-                  isDepotMode={isHubMode}
-                  onMapReady={(map) => (mapRef.current = map)}
-                  searchedLocation={searchedLocation}
-                  stopsForRoutes={processedStops}
-                  simulationTime={simulationTime}
-                  isSimulating={isSimulating}
                 />
 
                 {/* Map Controls */}
@@ -836,7 +863,7 @@ export function InteractiveMap() {
             </p>
           </CardHeader>
           <CardContent>
-            <OptimizedRouteMap
+            <GoogleOptimizedRouteMap
               stops={processedStops}
               route={
                 mapType === "Optimized Route Overview"

@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch, Github, Linkedin } from "lucide-react"
-import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { DynamicInteractiveMap } from "@/components/dynamic-interactive-map"
 
 export default function HomePage() {
   return (
@@ -67,7 +67,7 @@ export default function HomePage() {
 
           {/* Interactive Route Optimization Demo */}
           <div className="mt-16 max-w-6xl mx-auto">
-            <InteractiveMap />
+            <DynamicInteractiveMap />
           </div>
         </div>
       </section>
