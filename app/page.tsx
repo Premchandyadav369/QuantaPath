@@ -6,6 +6,7 @@ import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { AnimatedHeading } from "@/components/animated-heading"
 
 export default function HomePage() {
   return (
@@ -27,9 +28,11 @@ export default function HomePage() {
               <Button variant="ghost" size="sm">
                 Benchmarks
               </Button>
-              <Button variant="ghost" size="sm">
-                GitHub
-              </Button>
+              <a href="https://github.com/Premchandyadav369/QuantaPath" target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" size="sm">
+                  GitHub
+                </Button>
+              </a>
               <Button size="sm" className="bg-accent hover:bg-accent/90">
                 Try Now <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -46,9 +49,9 @@ export default function HomePage() {
               <Zap className="w-4 h-4 mr-1" />
               Optimizing delivery routes at quantum speed
             </Badge>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <AnimatedHeading className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Quantum-Powered Path Optimization for <span className="text-accent">Smarter Deliveries</span>
-            </h1>
+            </AnimatedHeading>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
               Harness QAOA and hybrid computing to find optimal delivery routes in real time. Experience the future of
               logistics optimization today.
@@ -58,10 +61,12 @@ export default function HomePage() {
                 <MapPin className="w-5 h-5 mr-2" />
                 Try Demo
               </Button>
-              <Button size="lg" variant="outline">
-                <GitBranch className="w-5 h-5 mr-2" />
-                View GitHub
-              </Button>
+              <a href="https://github.com/Premchandyadav369/QuantaPath" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="outline">
+                  <GitBranch className="w-5 h-5 mr-2" />
+                  View GitHub
+                </Button>
+              </a>
             </div>
           </div>
 
