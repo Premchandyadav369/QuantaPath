@@ -3,14 +3,12 @@ import type { DeliveryStop, RouteResult } from "@/lib/types"
 
 const routeColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"];
 
-// Define distinct colors for algorithms - ADDED NEW ALGORITHMS HERE
+// Define distinct colors for algorithms
 const algorithmColors = {
   quantum: "#7B2CBF", // Purple
   classical: "#0D1B2A", // Dark Blue
-  simulated: "#06D6A0", // Teal (Generic simulated, for routes not matching specific names)
-  "haws qaoa": "#FFC300", // Gold/Amber for HAWS QAOA
-  "nearest neighbour": "#DAF7A6", // Light Green for Nearest Neighbour
-  // Add more as needed, ensure keys are consistent with how you'll check them in route names
+  simulated: "#06D6A0", // Teal
+  // You can add more as needed
 };
 
 interface LeafletMapProps {
@@ -313,7 +311,6 @@ export function LeafletMap({
 
         if (routeCoords.length < 2) return;
 
-        // Use getRouteColor for dashed lines as well, if applicable
         const dashArray = route.name.includes("Simulated") ? "10,5" : route.solver === "classical" ? "5,5" : undefined;
         const polyline = L.polyline(routeCoords, { color, weight: 2, opacity: 0.6, dashArray }).addTo(map);
         routeLinesRef.current.push(polyline);
@@ -328,7 +325,7 @@ export function LeafletMap({
 
   // Effect for simulating vehicle movement
   useEffect(() => {
-    if (!mapInstanceRef.current || !isLoaded || !selectedRoute) return; // Ensure selectedRoute is available
+    if (!mapInstanceRef.current || !isLoaded) return;
     const L = window.L;
     const map = mapInstanceRef.current;
 
@@ -368,33 +365,19 @@ export function LeafletMap({
     const currentDist = simulationTime * totalRouteDistance;
     const point = getPointAtDistance(coords, currentDist);
 
-    // Get the color for the selected route's solver
-    const vehicleColor = getRouteColor(selectedRoute.solver, selectedRoute.name);
-
     if (!vehicleMarkerRef.current) {
       const vehicleIcon = L.divIcon({
         className: 'vehicle-marker',
-        // Apply the color directly to the vehicle marker's HTML
-        html: `<span style="color: ${vehicleColor};">🚚</span>`,
+        html: '🚚',
         iconSize: [32, 32],
         iconAnchor: [16, 16],
       });
       vehicleMarkerRef.current = L.marker(point, { icon: vehicleIcon, zIndexOffset: 1000 }).addTo(map);
     } else {
       vehicleMarkerRef.current.setLatLng(point);
-      // Update the color if the selected route changes during simulation
-      const currentIconHtml = vehicleMarkerRef.current.options.icon.options.html;
-      if (!currentIconHtml.includes(vehicleColor)) {
-          vehicleMarkerRef.current.setIcon(L.divIcon({
-              className: 'vehicle-marker',
-              html: `<span style="color: ${vehicleColor};">🚚</span>`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
-          }));
-      }
     }
 
-  }, [simulationTime, isSimulating, routePolyline, isLoaded, selectedRoute]); // Added selectedRoute to dependencies
+  }, [simulationTime, isSimulating, routePolyline, isLoaded]);
 
   // Effect for drawing route direction arrows
   useEffect(() => {
@@ -414,9 +397,6 @@ export function LeafletMap({
     const coords = routePolyline.features[0].geometry.coordinates;
     const arrowInterval = 200; // meters
     let totalDistance = 0;
-
-    // Get the color for the selected route's solver for the arrows
-    const arrowColor = getRouteColor(selectedRoute.solver, selectedRoute.name);
 
     for (let i = 0; i < coords.length - 1; i++) {
       const start = L.latLng(coords[i][1], coords[i][0]);
@@ -438,8 +418,7 @@ export function LeafletMap({
 
           const arrowIcon = L.divIcon({
             className: 'route-arrow',
-            // Use the determined arrowColor here
-            html: `<div style="transform: rotate(${bearing}deg); font-size: 1.5em; color: ${arrowColor};">➤</div>`,
+            html: `<div style="transform: rotate(${bearing}deg); font-size: 1.5em; color: ${getRouteColor(selectedRoute.solver, selectedRoute.name)};">➤</div>`,
             iconSize: [20, 20],
             iconAnchor: [10, 10],
           });
@@ -454,27 +433,10 @@ export function LeafletMap({
   }, [routePolyline, selectedRoute, isLoaded]); // Rerun when polyline or selected route changes
 
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
-    const lowerCaseName = name.toLowerCase();
-
-    // Check for specific simulated algorithm names first
-    if (lowerCaseName.includes("haws qaoa")) {
-      return algorithmColors["haws qaoa"];
+    if (name.includes("Simulated")) {
+      return algorithmColors.simulated;
     }
-    if (lowerCaseName.includes("nearest neighbour")) {
-      return algorithmColors["nearest neighbour"];
-    }
-
-    // Then check for broader simulated categories
-    if (lowerCaseName.includes("simulated")) {
-      if (lowerCaseName.includes("quantum")) {
-        return algorithmColors.quantum;
-      } else if (lowerCaseName.includes("classical")) {
-        return algorithmColors.classical;
-      }
-      return algorithmColors.simulated; // Generic simulated
-    }
-
-    // Finally, use the solver property for non-simulated routes
+    // Directly use the solver property for color
     return algorithmColors[solver] || "#0D1B2A"; // Fallback to dark blue if solver type is unknown
   }
 
@@ -593,7 +555,7 @@ export function LeafletMap({
         }
         
         .arrow-icon {
-          color: #7B2CBF; /* This will be overridden by inline style */
+          color: #7B2CBF;
           font-size: 16px;
           font-weight: bold;
           text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
