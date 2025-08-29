@@ -1,9 +1,15 @@
-"use client"
-
 import { useEffect, useRef, useState } from "react"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 
 const routeColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFA1"];
+
+// Define distinct colors for algorithms
+const algorithmColors = {
+  quantum: "#7B2CBF", // Purple
+  classical: "#0D1B2A", // Dark Blue
+  simulated: "#06D6A0", // Teal
+  // You can add more as needed
+};
 
 interface LeafletMapProps {
   stops: DeliveryStop[]
@@ -229,6 +235,7 @@ export function LeafletMap({
     setRoutePolyline(null);
 
     const drawRoute = async (route) => {
+      // Use the getRouteColor function for consistency
       const color = getRouteColor(route.solver, route.name);
       const isSelected = selectedRoute?.name === route.name;
 
@@ -402,7 +409,8 @@ export function LeafletMap({
 
       let distanceCovered = 0;
       while (distanceCovered < segmentDist) {
-        if (totalDistance % arrowInterval < (totalDistance - segmentDist) % arrowInterval) {
+        // Only draw arrow if we are at or past the interval
+        if (totalDistance % arrowInterval < (totalDistance + distanceCovered) % arrowInterval) {
            const point = L.latLng(
             start.lat + (end.lat - start.lat) * (distanceCovered / segmentDist),
             start.lng + (end.lng - start.lng) * (distanceCovered / segmentDist)
@@ -425,9 +433,11 @@ export function LeafletMap({
   }, [routePolyline, selectedRoute, isLoaded]); // Rerun when polyline or selected route changes
 
   const getRouteColor = (solver: "quantum" | "classical", name: string) => {
-    if (solver === "quantum") return "#7B2CBF"
-    if (name.includes("Simulated")) return "#06D6A0"
-    return "#0D1B2A"
+    if (name.includes("Simulated")) {
+      return algorithmColors.simulated;
+    }
+    // Directly use the solver property for color
+    return algorithmColors[solver] || "#0D1B2A"; // Fallback to dark blue if solver type is unknown
   }
 
   const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
