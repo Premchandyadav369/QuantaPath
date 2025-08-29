@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
-import { LeafletMap } from "@/components/leaflet-map"
+import { GoogleMapComponent as GoogleMap } from "@/components/google-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
@@ -36,24 +36,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
 export function InteractiveMap() {
-  const [stops, setStops] = useState<DeliveryStop[]>([
-    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
-    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
-    { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
-    { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
-    { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
-    { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
-    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
-    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
-  ])
+  const [stops, setStops] = useState<DeliveryStop[]>([])
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
   const [showOptimizedMap, setShowOptimizedMap] = useState(false)
+
+  useEffect(() => {
+    fetch("/stops.json")
+      .then((res) => res.json())
+      .then((data) => {
+        setStops(data)
+        setProcessedStops(data)
+      })
+  }, [])
 
   const [isHubMode, setIsHubMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
-  const mapRef = useRef<any>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
     {
@@ -388,10 +387,6 @@ export function InteractiveMap() {
         const name = bestResult.properties.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
         setSearchedLocation({ lat, lng, name });
-
-        if (mapRef.current) {
-          mapRef.current.setView([lat, lng], 13);
-        }
       } else {
         setSearchError("Location not found.");
       }
@@ -557,7 +552,7 @@ export function InteractiveMap() {
               )}
 
               <div className="relative">
-                <LeafletMap
+                <GoogleMap
                   stops={stops}
                   routes={routes}
                   selectedRoute={selectedRoute}
@@ -566,7 +561,6 @@ export function InteractiveMap() {
                   onStopMove={handleStopMove}
                   isOptimizing={isOptimizing}
                   isDepotMode={isHubMode}
-                  onMapReady={(map) => (mapRef.current = map)}
                   searchedLocation={searchedLocation}
                   stopsForRoutes={processedStops}
                   simulationTime={simulationTime}
@@ -574,7 +568,7 @@ export function InteractiveMap() {
                 />
 
                 {/* Map Controls */}
-                <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
+                <div className="absolute top-4 right-4 flex gap-2">
                   <Button
                     size="sm"
                     variant={isHubMode ? "default" : "outline"}

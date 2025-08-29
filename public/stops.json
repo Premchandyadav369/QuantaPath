@@ -1,0 +1,58 @@
+[
+  {
+    "id": "stop0",
+    "name": "Hub 1",
+    "lat": 16.5062,
+    "lng": 80.648,
+    "isDepot": true
+  },
+  {
+    "id": "stop1",
+    "name": "Hub 2",
+    "lat": 16.55,
+    "lng": 80.7,
+    "isDepot": true
+  },
+  {
+    "id": "stop2",
+    "name": "Electronics Store",
+    "lat": 16.515,
+    "lng": 80.655,
+    "isDepot": false
+  },
+  {
+    "id": "stop3",
+    "name": "Pharmacy",
+    "lat": 16.498,
+    "lng": 80.642,
+    "isDepot": false
+  },
+  {
+    "id": "stop4",
+    "name": "Grocery Market",
+    "lat": 16.51,
+    "lng": 80.635,
+    "isDepot": false
+  },
+  {
+    "id": "stop5",
+    "name": "Restaurant",
+    "lat": 16.522,
+    "lng": 80.651,
+    "isDepot": false
+  },
+  {
+    "id": "stop6",
+    "name": "Hardware Store",
+    "lat": 16.54,
+    "lng": 80.71,
+    "isDepot": false
+  },
+  {
+    "id": "stop7",
+    "name": "Bookstore",
+    "lat": 16.56,
+    "lng": 80.69,
+    "isDepot": false
+  }
+]
