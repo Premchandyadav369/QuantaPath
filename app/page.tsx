@@ -355,7 +355,7 @@ export default function HomePage() {
           <div className="mt-8 pt-8 border-t border-border/50">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">
-                Developed by <span className="font-semibold text-foreground">V C Premchand Yadav</span>
+                Developed by <span className="font-semibold text-foreground">RED-DRAGON</span>
               </p>
               <div className="flex justify-center items-center gap-4">
                 <a
