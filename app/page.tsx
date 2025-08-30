@@ -62,6 +62,10 @@ export default function HomePage() {
                 <GitBranch className="w-5 h-5 mr-2" />
                 View GitHub
               </Button>
+                <Button size="lg" className="bg-accent hover:bg-accent/90">
+                <MapPin className="w-5 h-5 mr-2" />
+                input excel data
+              </Button>
             </div>
           </div>
 
