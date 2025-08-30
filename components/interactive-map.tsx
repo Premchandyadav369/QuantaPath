@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
-import { AutocompleteInput } from "@/components/ui/autocomplete-input"
+import dynamic from "next/dynamic"
 import { Input } from "@/components/ui/input"
 import {
   MapPin,
@@ -35,6 +35,11 @@ import { SimulationControls } from "@/components/simulation-controls"
 import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
+
+const DynamicAutocompleteInput = dynamic(
+  () => import("@/components/ui/autocomplete-input").then((mod) => mod.AutocompleteInput),
+  { ssr: false }
+)
 
 export function InteractiveMap() {
   const [stops, setStops] = useState<DeliveryStop[]>([
@@ -371,8 +376,8 @@ export function InteractiveMap() {
     }
   }, [stops, quantumParams, classicalParams])
 
-  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
-    if (place.geometry && place.geometry.location) {
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult | null) => {
+    if (place && place.geometry && place.geometry.location) {
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
       const name = place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -381,9 +386,11 @@ export function InteractiveMap() {
       setSearchedLocation({ lat, lng, name });
 
       if (mapRef.current) {
-          mapRef.current.setCenter({ lat, lng });
-          mapRef.current.setZoom(13);
+        mapRef.current.setCenter({ lat, lng });
+        mapRef.current.setZoom(13);
       }
+    } else {
+      setSearchedLocation(null);
     }
   };
 
@@ -493,13 +500,7 @@ export function InteractiveMap() {
                 </div>
               </div>
               <div className="flex gap-2 mb-4">
-                <AutocompleteInput
-                  placeholder="Search for a town or address..."
-                  onPlaceSelect={handlePlaceSelect}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+                <DynamicAutocompleteInput onPlaceSelect={handlePlaceSelect} />
                 <Button onClick={handleSearch} disabled={isOptimizing}>
                   <Search className="w-4 h-4" />
                 </Button>

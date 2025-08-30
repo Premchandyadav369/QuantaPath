@@ -30,21 +30,6 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
       <body>
         {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              function initMap() {
-                // This function is called by the Google Maps script, but we don't need to do anything here
-                // because we will initialize the autocomplete in our React component.
-              }
-            `,
-          }}
-        />
-        <script
-          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U&libraries=places&callback=initMap`}
-          async
-          defer
-        ></script>
       </body>
     </html>
   )

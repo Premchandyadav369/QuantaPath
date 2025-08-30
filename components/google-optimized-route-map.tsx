@@ -103,10 +103,11 @@ export function GoogleOptimizedRouteMap({
   const position = { lat: 16.5062, lng: 80.648 }
 
   return (
-    <APIProvider apiKey={apiKey}>
+    <APIProvider apiKey={apiKey} libraries={['places']}>
       <Map
         defaultCenter={position}
         defaultZoom={12}
+        mapId="a3b4c5d6e7f8g9h0"
         gestureHandling={"greedy"}
         disableDefaultUI={true}
       >

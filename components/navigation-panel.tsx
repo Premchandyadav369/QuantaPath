@@ -181,46 +181,7 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
   }, [stops, selectedRoute])
 
   useEffect(() => {
-    const fetchDetailedRoute = async () => {
-      if (!selectedRoute || stops.length < 2) {
-        setNavigationSteps([])
-        return
-      }
-
-      setIsLoading(true)
-      try {
-        const distanceService = DistanceService.getInstance()
-        const detailedRoute = await distanceService.getDetailedRoute(stops, selectedRoute.tour)
-
-        const steps: NavigationStep[] = detailedRoute.segments.map((segment, index) => ({
-          from: segment.fromStop,
-          to: segment.toStop,
-          distance: segment.distance,
-          duration: segment.duration,
-          direction: mapInstructionTypeToDirection(segment.instructions[0]?.type || "straight"),
-          bearing: calculateBearing(segment.fromStop.lat, segment.fromStop.lng, segment.toStop.lat, segment.toStop.lng),
-          instruction:
-            segment.instructions[0]?.instruction ||
-            generateFallbackInstruction(segment.fromStop, segment.toStop, index === 0),
-          turnInstructions: segment.instructions.map((inst) => ({
-            type: inst.type,
-            instruction: inst.instruction,
-            distance: inst.distance,
-            duration: inst.duration,
-          })),
-        }))
-
-        setNavigationSteps(steps)
-      } catch (error) {
-        console.warn("Failed to fetch detailed route, using fallback:", error)
-        // Fallback to original calculation method
-        setNavigationSteps(calculateNavigationSteps())
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchDetailedRoute()
+    setNavigationSteps(calculateNavigationSteps())
   }, [selectedRoute, stops, calculateNavigationSteps])
 
   if (!selectedRoute || stops.length < 2) {

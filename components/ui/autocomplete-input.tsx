@@ -1,46 +1,38 @@
 "use client"
 
 import * as React from "react"
-import { Input } from "@/components/ui/input"
+import { PlacePicker } from "@googlemaps/extended-component-library/react"
+import type { PlacePicker as PlacePickerWC } from "@googlemaps/extended-component-library/place_picker.js"
 
-interface AutocompleteInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  onPlaceSelect: (place: google.maps.places.PlaceResult) => void
+interface AutocompleteInputProps {
+  onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void
 }
 
-export function AutocompleteInput({
-  onPlaceSelect,
-  ...props
-}: AutocompleteInputProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const autocompleteRef = React.useRef<google.maps.places.Autocomplete | null>(
-    null
-  )
+export function AutocompleteInput({ onPlaceSelect }: AutocompleteInputProps) {
+  const pickerRef = React.useRef<PlacePickerWC>(null)
 
   React.useEffect(() => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      console.error("Google Maps JavaScript API with Places library is not loaded.")
-      return
+    const picker = pickerRef.current
+    if (!picker) return
+
+    const handlePlaceChange = () => {
+      onPlaceSelect(picker.value || null)
     }
 
-    if (inputRef.current && !autocompleteRef.current) {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          fields: ["address_components", "geometry", "icon", "name"],
-        }
-      )
+    picker.addEventListener("gmp-placechange", handlePlaceChange)
 
-      autocompleteRef.current.addListener("place_changed", () => {
-        if (autocompleteRef.current) {
-          const place = autocompleteRef.current.getPlace()
-          if (place.geometry) {
-            onPlaceSelect(place)
-          }
-        }
-      })
+    return () => {
+      picker.removeEventListener("gmp-placechange", handlePlaceChange)
     }
   }, [onPlaceSelect])
 
-  return <Input ref={inputRef} {...props} />
+  return (
+    <div className="w-full">
+      <PlacePicker
+        ref={pickerRef}
+        placeholder="Search for a town or address..."
+        className="w-full"
+      />
+    </div>
+  )
 }
