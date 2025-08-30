@@ -12,29 +12,47 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENROUTE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key for OpenRouteService is not configured" },
-        { status: 500 }
-      );
-    }
+    const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U";
 
     const response = await fetch(
-      `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${query}`
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        query
+      )}&key=${apiKey}`
     );
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("OpenRouteService geocode error:", errorData);
+      console.error("Google Geocode error:", errorData);
       return NextResponse.json(
-        { error: "Failed to fetch geocode data from OpenRouteService" },
+        { error: "Failed to fetch geocode data from Google Maps" },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    if (data.status !== "OK") {
+      return NextResponse.json(
+        { features: [] },
+        { status: 200 }
+      );
+    }
+
+    // Adapt Google's response to the format expected by the frontend
+    const features = data.results.map((result: any) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [result.geometry.location.lng, result.geometry.location.lat],
+      },
+      properties: {
+        name: result.formatted_address,
+        // You can add more properties here if needed, like address components
+        place_id: result.place_id,
+      },
+    }));
+
+    return NextResponse.json({ features });
   } catch (error) {
     console.error("Geocode error:", error);
     return NextResponse.json(

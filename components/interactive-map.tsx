@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import dynamic from "next/dynamic"
 import { Input } from "@/components/ui/input"
 import {
   MapPin,
@@ -26,14 +27,19 @@ import {
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
-import { LeafletMap } from "@/components/leaflet-map"
+import { GoogleMap } from "@/components/google-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import { SimulationControls } from "@/components/simulation-controls"
-import { OptimizedRouteMap } from "@/components/optimized-route-map"
+import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
+
+const DynamicAutocompleteInput = dynamic(
+  () => import("@/components/ui/autocomplete-input").then((mod) => mod.AutocompleteInput),
+  { ssr: false }
+)
 
 export function InteractiveMap() {
   const [stops, setStops] = useState<DeliveryStop[]>([
@@ -51,9 +57,8 @@ export function InteractiveMap() {
 
   const [isHubMode, setIsHubMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchError, setSearchError] = useState<string | null>(null)
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
     {
@@ -371,33 +376,31 @@ export function InteractiveMap() {
     }
   }, [stops, quantumParams, classicalParams])
 
-  const handleSearch = async () => {
-    if (!searchQuery) return;
-    setSearchError(null);
-    setSearchedLocation(null);
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult | null) => {
+    if (place && place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const name = place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    try {
-      const response = await fetch(`/api/geocode?query=${encodeURIComponent(searchQuery)}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch geocode data");
+      setSearchQuery(name);
+      setSearchedLocation({ lat, lng, name });
+
+      if (mapRef.current) {
+        mapRef.current.setCenter({ lat, lng });
+        mapRef.current.setZoom(13);
       }
-      const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        const bestResult = data.features[0];
-        const [lng, lat] = bestResult.geometry.coordinates;
-        const name = bestResult.properties.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } else {
+      setSearchedLocation(null);
+    }
+  };
 
-        setSearchedLocation({ lat, lng, name });
-
-        if (mapRef.current) {
-          mapRef.current.setView([lat, lng], 13);
-        }
-      } else {
-        setSearchError("Location not found.");
-      }
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      setSearchError("Failed to search for location.");
+  const handleSearch = () => {
+    if (!searchQuery || !mapRef.current) return;
+    // This is a simplified search that just flies to the searched location
+    // if it has been selected from the autocomplete.
+    if(searchedLocation) {
+      mapRef.current.setCenter({ lat: searchedLocation.lat, lng: searchedLocation.lng });
+      mapRef.current.setZoom(13);
     }
   };
 
@@ -497,24 +500,11 @@ export function InteractiveMap() {
                 </div>
               </div>
               <div className="flex gap-2 mb-4">
-                <Input
-                  type="text"
-                  placeholder="Search for a town or address..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+                <DynamicAutocompleteInput onPlaceSelect={handlePlaceSelect} />
                 <Button onClick={handleSearch} disabled={isOptimizing}>
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
-
-              {searchError && !searchedLocation && (
-                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                  <span className="text-sm text-destructive">{searchError}</span>
-                </div>
-              )}
 
               {searchedLocation && (
                 <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
@@ -556,8 +546,8 @@ export function InteractiveMap() {
                 </div>
               )}
 
-              <div className="relative">
-                <LeafletMap
+              <div className="relative h-[600px] w-full">
+                <GoogleMap
                   stops={stops}
                   routes={routes}
                   selectedRoute={selectedRoute}
@@ -574,7 +564,7 @@ export function InteractiveMap() {
                 />
 
                 {/* Map Controls */}
-                <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button
                     size="sm"
                     variant={isHubMode ? "default" : "outline"}
@@ -836,7 +826,7 @@ export function InteractiveMap() {
             </p>
           </CardHeader>
           <CardContent>
-            <OptimizedRouteMap
+            <GoogleOptimizedRouteMap
               stops={processedStops}
               route={
                 mapType === "Optimized Route Overview"

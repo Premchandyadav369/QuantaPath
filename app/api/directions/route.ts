@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import polyline from "google-polyline";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,37 +13,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENROUTE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key for OpenRouteService is not configured" },
-        { status: 500 }
-      );
-    }
+    const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U";
 
-    const response = await fetch(
-      "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: apiKey,
-        },
-        body: JSON.stringify({ coordinates }),
-      }
-    );
+    const origin = coordinates[0].reverse().join(",");
+    const destination = coordinates[1].reverse().join(",");
+
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`;
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("OpenRouteService error:", errorData);
+      console.error("Google Directions error:", errorData);
       return NextResponse.json(
-        { error: "Failed to fetch directions from OpenRouteService" },
+        { error: "Failed to fetch directions from Google Maps" },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    if (data.status !== "OK" || !data.routes || data.routes.length === 0) {
+      return NextResponse.json(
+        {
+          type: "FeatureCollection",
+          features: [],
+        },
+        { status: 200 }
+      );
+    }
+
+    const route = data.routes[0];
+    const leg = route.legs[0];
+    const steps = leg.steps;
+
+    const detailedPolyline = steps.flatMap(step => polyline.decode(step.polyline.points));
+
+    const geojsonFeature = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: detailedPolyline.map((p) => [p[1], p[0]]), // map to [lng, lat]
+      },
+    };
+
+    return NextResponse.json({
+      type: "FeatureCollection",
+      features: [geojsonFeature],
+    });
   } catch (error) {
     console.error("Directions error:", error);
     return NextResponse.json(
