@@ -1,3 +1,4 @@
+import polyline from "google-polyline";
 import type { DeliveryStop, DistanceMatrix, DistanceMatrixRequest } from "@/lib/types"
 
 // Haversine distance calculation for fallback
@@ -78,11 +79,11 @@ export class DistanceService {
   }
 
   private async calculateGoogleMatrix(request: DistanceMatrixRequest): Promise<DistanceMatrix> {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
     if (!apiKey) {
-      console.warn("Google Maps API key not found, falling back to OpenRouteService")
-      return this.calculateOpenRouteMatrix(request)
+      console.warn("Google Maps API key not found, falling back to Haversine distance")
+      return this.calculateHaversineMatrix(request)
     }
 
     try {
@@ -132,52 +133,7 @@ export class DistanceService {
         source: "google",
       }
     } catch (error) {
-      console.warn("Google Maps API failed, falling back to OpenRouteService:", error)
-      return this.calculateOpenRouteMatrix(request)
-    }
-  }
-
-  private async calculateOpenRouteMatrix(request: DistanceMatrixRequest): Promise<DistanceMatrix> {
-    const apiKey = process.env.OPENROUTE_API_KEY
-
-    if (!apiKey) {
-      console.warn("OpenRoute API key not found, falling back to Haversine")
-      return this.calculateHaversineMatrix(request)
-    }
-
-    try {
-      const coordinates = request.stops.map((stop) => {
-        const coords = getCoordinates(stop)
-        return [coords.lng, coords.lat] // OpenRoute uses [lng, lat] format
-      })
-
-      const response = await fetch("https://api.openrouteservice.org/v2/matrix/driving-car", {
-        method: "POST",
-        headers: {
-          Authorization: apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          locations: coordinates,
-          metrics: ["distance", "duration"],
-          units: "km",
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(`OpenRoute API error: ${data.error?.message || response.statusText}`)
-      }
-
-      return {
-        distances: data.distances,
-        durations: data.durations?.map((row: number[]) => row.map((d: number) => d / 60)), // Convert to minutes
-        units: "km",
-        source: "openrouteservice",
-      }
-    } catch (error) {
-      console.warn("OpenRoute API failed, falling back to Haversine:", error)
+      console.warn("Google Maps API failed, falling back to Haversine distance:", error)
       return this.calculateHaversineMatrix(request)
     }
   }
@@ -215,114 +171,101 @@ export class DistanceService {
   }
 
   async getDetailedRoute(stops: DeliveryStop[], tour: number[]): Promise<DetailedRoute> {
-    const apiKey = process.env.OPENROUTE_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-      console.warn("OpenRoute API key not found, using fallback routing")
-      return this.getFallbackDetailedRoute(stops, tour)
+      console.warn("Google Maps API key not found, using fallback routing");
+      return this.getFallbackDetailedRoute(stops, tour);
+    }
+
+    if (tour.length < 2) {
+      return this.getFallbackDetailedRoute(stops, tour);
     }
 
     try {
-      const coordinates = tour.map((index) => {
-        const stop = stops[index]
-        return [stop.lng, stop.lat] // OpenRoute uses [lng, lat] format
-      })
+      const tourStops = tour.map(i => stops[i]);
+      const origin = `${tourStops[0].lat},${tourStops[0].lng}`;
+      const destination = `${tourStops[tourStops.length - 1].lat},${tourStops[tourStops.length - 1].lng}`;
+      const waypoints = tourStops
+        .slice(1, -1)
+        .map(stop => `${stop.lat},${stop.lng}`)
+        .join("|");
 
-      const response = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
-        method: "POST",
-        headers: {
-          Authorization: apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          coordinates,
-          instructions: true,
-          geometry: true,
-          elevation: false,
-          extra_info: ["steepness", "surface"],
-        }),
-      })
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=${waypoints}&key=${apiKey}`;
 
-      const data = await response.json()
+      const response = await fetch(url);
+      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(`OpenRoute Directions API error: ${data.error?.message || response.statusText}`)
+      if (data.status !== "OK") {
+        throw new Error(`Google Directions API error: ${data.status} - ${data.error_message || ''}`);
       }
 
-      return this.parseOpenRouteResponse(data, stops, tour)
+      return this.parseGoogleDirectionsResponse(data, tourStops);
     } catch (error) {
-      console.warn("OpenRoute Directions API failed, using fallback:", error)
-      return this.getFallbackDetailedRoute(stops, tour)
+      console.warn("Google Directions API failed, using fallback:", error);
+      return this.getFallbackDetailedRoute(stops, tour);
     }
   }
 
-  private parseOpenRouteResponse(data: any, stops: DeliveryStop[], tour: number[]): DetailedRoute {
-    const feature = data.features[0]
-    const geometry = feature.geometry.coordinates
-    const properties = feature.properties
-    const segments = properties.segments || []
-    const instructions = properties.segments?.flatMap((seg: any) => seg.steps || []) || []
+  private parseGoogleDirectionsResponse(data: any, tourStops: DeliveryStop[]): DetailedRoute {
+    const route = data.routes[0];
+    if (!route) {
+      throw new Error("No route found in Google Directions response");
+    }
 
-    const routeSegments: RouteSegment[] = []
-    let segmentIndex = 0
+    const fullGeometry = polyline.decode(route.overview_polyline.points).map(p => [p[1], p[0]]);
+    let totalDistance = 0;
+    let totalDuration = 0;
+    const routeSegments: RouteSegment[] = [];
 
-    for (let i = 0; i < tour.length - 1; i++) {
-      const fromStop = stops[tour[i]]
-      const toStop = stops[tour[i + 1]]
+    route.legs.forEach((leg: any, legIndex: number) => {
+      totalDistance += leg.distance.value;
+      totalDuration += leg.duration.value;
 
-      const segment = segments[segmentIndex] || {}
-      const segmentInstructions = this.extractInstructionsForSegment(instructions, segmentIndex)
+      const fromStop = tourStops[legIndex];
+      const toStop = tourStops[legIndex + 1];
+
+      const legGeometry = leg.steps.flatMap(step => polyline.decode(step.polyline.points).map(p => [p[1], p[0]]));
+
+      const instructions = leg.steps.map((step: any): TurnInstruction => ({
+        type: this.mapGoogleInstructionType(step.maneuver),
+        instruction: step.html_instructions.replace(/<[^>]*>/g, ""), // Strip HTML tags
+        distance: step.distance.value / 1000, // to km
+        duration: step.duration.value / 60, // to minutes
+        coordinate: [step.start_location.lng, step.start_location.lat],
+      }));
 
       routeSegments.push({
         fromStop,
         toStop,
-        distance: (segment.distance || 0) / 1000, // Convert to km
-        duration: (segment.duration || 0) / 60, // Convert to minutes
-        geometry: geometry.slice(segment.geometry_start || 0, segment.geometry_end || geometry.length),
-        instructions: segmentInstructions,
-      })
-
-      segmentIndex++
-    }
+        distance: leg.distance.value / 1000, // to km
+        duration: leg.duration.value / 60, // to minutes
+        geometry: legGeometry,
+        instructions,
+      });
+    });
 
     return {
       segments: routeSegments,
-      totalDistance: (properties.summary?.distance || 0) / 1000,
-      totalDuration: (properties.summary?.duration || 0) / 60,
-      geometry,
-    }
+      totalDistance: totalDistance / 1000, // to km
+      totalDuration: totalDuration / 60, // to minutes
+      geometry: fullGeometry,
+    };
   }
 
-  private extractInstructionsForSegment(instructions: any[], segmentIndex: number): TurnInstruction[] {
-    return instructions
-      .filter((inst: any) => inst.way_points?.[0] >= segmentIndex)
-      .slice(0, 5) // Limit to 5 instructions per segment
-      .map((inst: any) => ({
-        type: this.mapInstructionType(inst.type),
-        instruction: inst.instruction || "Continue straight",
-        distance: (inst.distance || 0) / 1000,
-        duration: (inst.duration || 0) / 60,
-        coordinate: inst.coordinate || [0, 0],
-      }))
-  }
-
-  private mapInstructionType(type: number): TurnInstruction["type"] {
-    const typeMap: { [key: number]: TurnInstruction["type"] } = {
-      0: "straight",
-      1: "right",
-      2: "sharp-right",
-      3: "u-turn",
-      4: "sharp-left",
-      5: "left",
-      6: "straight",
-      7: "straight",
-      8: "straight",
-      9: "straight",
-      10: "straight",
-      11: "straight",
-      12: "straight",
-    }
-    return typeMap[type] || "straight"
+  private mapGoogleInstructionType(maneuver?: string): TurnInstruction['type'] {
+    if (!maneuver) return 'straight';
+    if (maneuver.includes('turn-sharp-left')) return 'sharp-left';
+    if (maneuver.includes('turn-slight-left')) return 'left';
+    if (maneuver.includes('merge')) return 'straight';
+    if (maneuver.includes('roundabout-left')) return 'left';
+    if (maneuver.includes('turn-left')) return 'left';
+    if (maneuver.includes('turn-sharp-right')) return 'sharp-right';
+    if (maneuver.includes('turn-slight-right')) return 'right';
+    if (maneuver.includes('roundabout-right')) return 'right';
+    if (maneuver.includes('turn-right')) return 'right';
+    if (maneuver.includes('uturn')) return 'u-turn';
+    return 'straight';
   }
 
   private getFallbackDetailedRoute(stops: DeliveryStop[], tour: number[]): DetailedRoute {

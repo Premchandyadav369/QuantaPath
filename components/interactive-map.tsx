@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { Input } from "@/components/ui/input"
 import {
   MapPin,
@@ -51,7 +52,6 @@ export function InteractiveMap() {
 
   const [isHubMode, setIsHubMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchError, setSearchError] = useState<string | null>(null)
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const mapRef = useRef<any>(null)
 
@@ -371,33 +371,27 @@ export function InteractiveMap() {
     }
   }, [stops, quantumParams, classicalParams])
 
-  const handleSearch = async () => {
-    if (!searchQuery) return;
-    setSearchError(null);
-    setSearchedLocation(null);
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+    if (place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const name = place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    try {
-      const response = await fetch(`/api/geocode?query=${encodeURIComponent(searchQuery)}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch geocode data");
+      setSearchQuery(name);
+      setSearchedLocation({ lat, lng, name });
+
+      if (mapRef.current) {
+        mapRef.current.setView([lat, lng], 13);
       }
-      const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        const bestResult = data.features[0];
-        const [lng, lat] = bestResult.geometry.coordinates;
-        const name = bestResult.properties.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  };
 
-        setSearchedLocation({ lat, lng, name });
-
-        if (mapRef.current) {
-          mapRef.current.setView([lat, lng], 13);
-        }
-      } else {
-        setSearchError("Location not found.");
-      }
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      setSearchError("Failed to search for location.");
+  const handleSearch = () => {
+    if (!searchQuery || !mapRef.current) return;
+    // This is a simplified search that just flies to the searched location
+    // if it has been selected from the autocomplete.
+    if(searchedLocation) {
+      mapRef.current.setView([searchedLocation.lat, searchedLocation.lng], 13);
     }
   };
 
@@ -497,9 +491,9 @@ export function InteractiveMap() {
                 </div>
               </div>
               <div className="flex gap-2 mb-4">
-                <Input
-                  type="text"
+                <AutocompleteInput
                   placeholder="Search for a town or address..."
+                  onPlaceSelect={handlePlaceSelect}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -508,13 +502,6 @@ export function InteractiveMap() {
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
-
-              {searchError && !searchedLocation && (
-                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                  <span className="text-sm text-destructive">{searchError}</span>
-                </div>
-              )}
 
               {searchedLocation && (
                 <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
