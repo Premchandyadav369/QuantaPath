@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: "API key for Google Maps is not configured" },
@@ -49,15 +49,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const encodedPolyline = data.routes[0].overview_polyline.points;
-    const decodedPolyline = polyline.decode(encodedPolyline);
+    const route = data.routes[0];
+    const leg = route.legs[0];
+    const steps = leg.steps;
+
+    const detailedPolyline = steps.flatMap(step => polyline.decode(step.polyline.points));
 
     const geojsonFeature = {
       type: "Feature",
       properties: {},
       geometry: {
         type: "LineString",
-        coordinates: decodedPolyline.map((p) => [p[1], p[0]]), // map to [lng, lat]
+        coordinates: detailedPolyline.map((p) => [p[1], p[0]]), // map to [lng, lat]
       },
     };
 

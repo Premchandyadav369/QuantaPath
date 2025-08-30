@@ -62,9 +62,6 @@ export class DistanceService {
     let matrix: DistanceMatrix
 
     switch (request.source) {
-      case "openrouteservice":
-        matrix = await this.calculateOpenRouteMatrix(request)
-        break
       case "google":
         matrix = await this.calculateGoogleMatrix(request)
         break
@@ -79,7 +76,7 @@ export class DistanceService {
   }
 
   private async calculateGoogleMatrix(request: DistanceMatrixRequest): Promise<DistanceMatrix> {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY
 
     if (!apiKey) {
       console.warn("Google Maps API key not found, falling back to Haversine distance")
@@ -170,188 +167,6 @@ export class DistanceService {
     }
   }
 
-  async getDetailedRoute(stops: DeliveryStop[], tour: number[]): Promise<DetailedRoute> {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-      console.warn("Google Maps API key not found, using fallback routing");
-      return this.getFallbackDetailedRoute(stops, tour);
-    }
-
-    if (tour.length < 2) {
-      return this.getFallbackDetailedRoute(stops, tour);
-    }
-
-    try {
-      const tourStops = tour.map(i => stops[i]);
-      const origin = `${tourStops[0].lat},${tourStops[0].lng}`;
-      const destination = `${tourStops[tourStops.length - 1].lat},${tourStops[tourStops.length - 1].lng}`;
-      const waypoints = tourStops
-        .slice(1, -1)
-        .map(stop => `${stop.lat},${stop.lng}`)
-        .join("|");
-
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=${waypoints}&key=${apiKey}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.status !== "OK") {
-        throw new Error(`Google Directions API error: ${data.status} - ${data.error_message || ''}`);
-      }
-
-      return this.parseGoogleDirectionsResponse(data, tourStops);
-    } catch (error) {
-      console.warn("Google Directions API failed, using fallback:", error);
-      return this.getFallbackDetailedRoute(stops, tour);
-    }
-  }
-
-  private parseGoogleDirectionsResponse(data: any, tourStops: DeliveryStop[]): DetailedRoute {
-    const route = data.routes[0];
-    if (!route) {
-      throw new Error("No route found in Google Directions response");
-    }
-
-    const fullGeometry = polyline.decode(route.overview_polyline.points).map(p => [p[1], p[0]]);
-    let totalDistance = 0;
-    let totalDuration = 0;
-    const routeSegments: RouteSegment[] = [];
-
-    route.legs.forEach((leg: any, legIndex: number) => {
-      totalDistance += leg.distance.value;
-      totalDuration += leg.duration.value;
-
-      const fromStop = tourStops[legIndex];
-      const toStop = tourStops[legIndex + 1];
-
-      const legGeometry = leg.steps.flatMap(step => polyline.decode(step.polyline.points).map(p => [p[1], p[0]]));
-
-      const instructions = leg.steps.map((step: any): TurnInstruction => ({
-        type: this.mapGoogleInstructionType(step.maneuver),
-        instruction: step.html_instructions.replace(/<[^>]*>/g, ""), // Strip HTML tags
-        distance: step.distance.value / 1000, // to km
-        duration: step.duration.value / 60, // to minutes
-        coordinate: [step.start_location.lng, step.start_location.lat],
-      }));
-
-      routeSegments.push({
-        fromStop,
-        toStop,
-        distance: leg.distance.value / 1000, // to km
-        duration: leg.duration.value / 60, // to minutes
-        geometry: legGeometry,
-        instructions,
-      });
-    });
-
-    return {
-      segments: routeSegments,
-      totalDistance: totalDistance / 1000, // to km
-      totalDuration: totalDuration / 60, // to minutes
-      geometry: fullGeometry,
-    };
-  }
-
-  private mapGoogleInstructionType(maneuver?: string): TurnInstruction['type'] {
-    if (!maneuver) return 'straight';
-    if (maneuver.includes('turn-sharp-left')) return 'sharp-left';
-    if (maneuver.includes('turn-slight-left')) return 'left';
-    if (maneuver.includes('merge')) return 'straight';
-    if (maneuver.includes('roundabout-left')) return 'left';
-    if (maneuver.includes('turn-left')) return 'left';
-    if (maneuver.includes('turn-sharp-right')) return 'sharp-right';
-    if (maneuver.includes('turn-slight-right')) return 'right';
-    if (maneuver.includes('roundabout-right')) return 'right';
-    if (maneuver.includes('turn-right')) return 'right';
-    if (maneuver.includes('uturn')) return 'u-turn';
-    return 'straight';
-  }
-
-  private getFallbackDetailedRoute(stops: DeliveryStop[], tour: number[]): DetailedRoute {
-    const segments: RouteSegment[] = []
-    let totalDistance = 0
-    let totalDuration = 0
-    const geometry: [number, number][] = []
-
-    for (let i = 0; i < tour.length - 1; i++) {
-      const fromStop = stops[tour[i]]
-      const toStop = stops[tour[i + 1]]
-
-      const distance = haversineDistance(fromStop.lat, fromStop.lng, toStop.lat, toStop.lng)
-      const duration = distance * 2 // 30 km/h average speed
-
-      // Generate simple straight-line geometry
-      const segmentGeometry: [number, number][] = [
-        [fromStop.lng, fromStop.lat],
-        [toStop.lng, toStop.lat],
-      ]
-
-      // Generate simple turn instruction
-      const bearing = this.calculateBearing(fromStop, toStop)
-      const instruction = this.generateTurnInstruction(
-        bearing,
-        i > 0 ? this.calculateBearing(stops[tour[i - 1]], fromStop) : 0,
-      )
-
-      segments.push({
-        fromStop,
-        toStop,
-        distance,
-        duration,
-        geometry: segmentGeometry,
-        instructions: [instruction],
-      })
-
-      totalDistance += distance
-      totalDuration += duration
-      geometry.push(...segmentGeometry)
-    }
-
-    return {
-      segments,
-      totalDistance,
-      totalDuration,
-      geometry,
-    }
-  }
-
-  private calculateBearing(from: DeliveryStop, to: DeliveryStop): number {
-    const dLon = ((to.lng - from.lng) * Math.PI) / 180
-    const lat1 = (from.lat * Math.PI) / 180
-    const lat2 = (to.lat * Math.PI) / 180
-
-    const y = Math.sin(dLon) * Math.cos(lat2)
-    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
-
-    return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
-  }
-
-  private generateTurnInstruction(currentBearing: number, previousBearing: number): TurnInstruction {
-    const angleDiff = ((currentBearing - previousBearing + 540) % 360) - 180
-
-    let type: TurnInstruction["type"] = "straight"
-    let instruction = "Continue straight"
-
-    if (Math.abs(angleDiff) > 150) {
-      type = "u-turn"
-      instruction = "Make a U-turn"
-    } else if (angleDiff > 45) {
-      type = angleDiff > 120 ? "sharp-right" : "right"
-      instruction = angleDiff > 120 ? "Turn sharp right" : "Turn right"
-    } else if (angleDiff < -45) {
-      type = angleDiff < -120 ? "sharp-left" : "left"
-      instruction = angleDiff < -120 ? "Turn sharp left" : "Turn left"
-    }
-
-    return {
-      type,
-      instruction,
-      distance: 0,
-      duration: 0,
-      coordinate: [0, 0],
-    }
-  }
 
   clearCache(): void {
     this.cache.clear()

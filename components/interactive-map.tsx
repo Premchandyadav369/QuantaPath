@@ -27,12 +27,12 @@ import {
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
-import { LeafletMap } from "@/components/leaflet-map"
+import { GoogleMap } from "@/components/google-map"
 import { ResultsVisualization } from "@/components/results-visualization"
 import { NavigationPanel } from "@/components/navigation-panel"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
 import { SimulationControls } from "@/components/simulation-controls"
-import { OptimizedRouteMap } from "@/components/optimized-route-map"
+import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
 
@@ -53,7 +53,7 @@ export function InteractiveMap() {
   const [isHubMode, setIsHubMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
     {
@@ -381,7 +381,8 @@ export function InteractiveMap() {
       setSearchedLocation({ lat, lng, name });
 
       if (mapRef.current) {
-        mapRef.current.setView([lat, lng], 13);
+          mapRef.current.setCenter({ lat, lng });
+          mapRef.current.setZoom(13);
       }
     }
   };
@@ -391,7 +392,8 @@ export function InteractiveMap() {
     // This is a simplified search that just flies to the searched location
     // if it has been selected from the autocomplete.
     if(searchedLocation) {
-      mapRef.current.setView([searchedLocation.lat, searchedLocation.lng], 13);
+      mapRef.current.setCenter({ lat: searchedLocation.lat, lng: searchedLocation.lng });
+      mapRef.current.setZoom(13);
     }
   };
 
@@ -543,8 +545,8 @@ export function InteractiveMap() {
                 </div>
               )}
 
-              <div className="relative">
-                <LeafletMap
+              <div className="relative h-[600px] w-full">
+                <GoogleMap
                   stops={stops}
                   routes={routes}
                   selectedRoute={selectedRoute}
@@ -561,7 +563,7 @@ export function InteractiveMap() {
                 />
 
                 {/* Map Controls */}
-                <div className="absolute top-4 right-4 flex gap-2 z-[1000]">
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button
                     size="sm"
                     variant={isHubMode ? "default" : "outline"}
@@ -823,7 +825,7 @@ export function InteractiveMap() {
             </p>
           </CardHeader>
           <CardContent>
-            <OptimizedRouteMap
+            <GoogleOptimizedRouteMap
               stops={processedStops}
               route={
                 mapType === "Optimized Route Overview"
