@@ -76,12 +76,7 @@ export class DistanceService {
   }
 
   private async calculateGoogleMatrix(request: DistanceMatrixRequest): Promise<DistanceMatrix> {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY
-
-    if (!apiKey) {
-      console.warn("Google Maps API key not found, falling back to Haversine distance")
-      return this.calculateHaversineMatrix(request)
-    }
+    const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
 
     try {
       const origins = request.stops

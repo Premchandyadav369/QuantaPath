@@ -98,10 +98,7 @@ export function GoogleOptimizedRouteMap({
   stops,
   route,
 }: GoogleOptimizedRouteMapProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!apiKey) {
-    return <div>Google Maps API key is not configured.</div>
-  }
+  const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
 
   const position = { lat: 16.5062, lng: 80.648 }
 

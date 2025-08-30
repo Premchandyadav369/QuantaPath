@@ -41,7 +41,7 @@ export default function RootLayout({
           }}
         />
         <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`}
+          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U&libraries=places&callback=initMap`}
           async
           defer
         ></script>
