@@ -10,20 +10,35 @@ import {
 import type { DeliveryStop, RouteResult } from "@/lib/types"
 import { useEffect, useState } from "react"
 
-function RoutePolyline({ route, stops }: { route: RouteResult; stops: DeliveryStop[] }) {
+interface GoogleOptimizedRouteMapProps {
+  stops: DeliveryStop[]
+  routes: RouteResult[]
+}
+
+const algorithmColors: { [key: string]: string } = {
+  quantum: "#7B2CBF", // Purple
+  classical: "#0D1B2A", // Dark Blue
+  simulated: "#06D6A0", // Teal
+}
+
+function getRouteColor(solver: "quantum" | "classical", name: string) {
+  if (name.includes("Simulated")) {
+    return algorithmColors.simulated
+  }
+  return algorithmColors[solver] || "#0D1B2A"
+}
+
+function RoutePolylines({ routes, stops }: { routes: RouteResult[]; stops: DeliveryStop[] }) {
   const map = useMap()
-  const [polyline, setPolyline] = useState<google.maps.Polyline | null>(null)
+  const [polylines, setPolylines] = useState<google.maps.Polyline[]>([])
 
   useEffect(() => {
-    if (!map || !route) {
-      return
-    }
+    if (!map) return
 
-    if (polyline) {
-      polyline.setMap(null)
-    }
+    polylines.forEach((p) => p.setMap(null))
+    const newPolylines: google.maps.Polyline[] = []
 
-    const fetchAndDrawRoute = async () => {
+    const fetchAndDrawRoute = async (route: RouteResult) => {
       const tourStops = route.tour
         .map((stopIndex) => stops[stopIndex])
         .filter(Boolean)
@@ -63,7 +78,6 @@ function RoutePolyline({ route, stops }: { route: RouteResult; stops: DeliverySt
             "Error fetching route segment, falling back to straight line for segment:",
             error
           )
-          // Fallback to straight line for this segment
           fullPath = [
             ...fullPath,
             { lat: startStop.lat, lng: startStop.lng },
@@ -72,38 +86,38 @@ function RoutePolyline({ route, stops }: { route: RouteResult; stops: DeliverySt
         }
       }
 
+      const color = getRouteColor(route.solver, route.name)
       const newPolyline = new google.maps.Polyline({
         path: fullPath,
-        strokeColor: "#7B2CBF",
+        strokeColor: color,
         strokeOpacity: 0.8,
         strokeWeight: 4,
       })
       newPolyline.setMap(map)
-      setPolyline(newPolyline)
+      newPolylines.push(newPolyline)
     }
 
-    fetchAndDrawRoute()
+    routes.forEach(fetchAndDrawRoute)
+    setPolylines(newPolylines)
 
     return () => {
-      if (polyline) {
-        polyline.setMap(null)
-      }
+      newPolylines.forEach((p) => p.setMap(null))
     }
-  }, [map, route, stops, polyline])
+  }, [map, routes, stops])
 
   return null
 }
 
 export function GoogleOptimizedRouteMap({
   stops,
-  route,
+  routes,
 }: GoogleOptimizedRouteMapProps) {
   const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
 
   const position = { lat: 16.5062, lng: 80.648 }
 
   return (
-    <APIProvider apiKey={apiKey} libraries={['places']}>
+    <APIProvider apiKey={apiKey} libraries={["places"]}>
       <Map
         defaultCenter={position}
         defaultZoom={12}
@@ -123,7 +137,7 @@ export function GoogleOptimizedRouteMap({
             />
           </AdvancedMarker>
         ))}
-        {route && <RoutePolyline route={route} stops={stops} />}
+        <RoutePolylines routes={routes} stops={stops} />
       </Map>
     </APIProvider>
   )

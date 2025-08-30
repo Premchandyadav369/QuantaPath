@@ -104,7 +104,7 @@ export function InteractiveMap() {
   const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
-  const [mapType, setMapType] = useState<string>("Optimized Route Overview")
+  const [mapType, setMapType] = useState<string>("All Routes")
 
   // Simulation state
   const [isSimulating, setIsSimulating] = useState(false)
@@ -814,10 +814,12 @@ export function InteractiveMap() {
                   <SelectValue placeholder="Select map type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Optimized Route Overview">Optimized Route Overview</SelectItem>
-                  <SelectItem value="HAWS-QAOA p=2">HAWS-QAOA p=2</SelectItem>
-                  <SelectItem value="Nearest Neighbor + 2-opt">Nearest Neighbor + 2-opt</SelectItem>
-                  <SelectItem value="Simulated Annealing">Simulated Annealing</SelectItem>
+                  <SelectItem value="All Routes">All Routes</SelectItem>
+                  {routes.map((route) => (
+                    <SelectItem key={route.name} value={route.name}>
+                      {route.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -828,10 +830,10 @@ export function InteractiveMap() {
           <CardContent>
             <GoogleOptimizedRouteMap
               stops={processedStops}
-              route={
-                mapType === "Optimized Route Overview"
-                  ? selectedRoute
-                  : routes.find(r => r.name === mapType) || selectedRoute
+              routes={
+                mapType === "All Routes"
+                  ? routes
+                  : routes.filter(r => r.name === mapType)
               }
             />
           </CardContent>
