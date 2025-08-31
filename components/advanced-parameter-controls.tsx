@@ -121,7 +121,7 @@ export function AdvancedParameterControls({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Settings className="w-20 h-5" />
+              <Settings className="w-5 h-5" />
               Advanced Parameters
             </CardTitle>
             <div className="flex gap-2">
