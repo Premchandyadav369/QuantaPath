@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from "react"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +25,7 @@ import {
   Heart,
   Info,
   Route,
+  Save,
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import * as XLSX from "xlsx"
@@ -36,23 +38,40 @@ import { SimulationControls } from "@/components/simulation-controls"
 import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
+import type { Session } from "@supabase/supabase-js"
 
 const DynamicAutocompleteInput = dynamic(
   () => import("@/components/ui/autocomplete-input").then((mod) => mod.AutocompleteInput),
   { ssr: false }
 )
 
-export function InteractiveMap() {
-  const [stops, setStops] = useState<DeliveryStop[]>([
-    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
-    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
-    { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
-    { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
-    { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
-    { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
-    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
-    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
-  ])
+interface InteractiveMapProps {
+  session: Session | null
+  stops: DeliveryStop[]
+  setStops: (stops: DeliveryStop[]) => void
+  routes: RouteResult[]
+  setRoutes: (routes: RouteResult[]) => void
+  selectedRoute: RouteResult | null
+  setSelectedRoute: (route: RouteResult | null) => void
+  quantumParams: any
+  setQuantumParams: (params: any) => void
+  classicalParams: any
+  setClassicalParams: (params: any) => void
+}
+
+export function InteractiveMap({
+  session,
+  stops,
+  setStops,
+  routes,
+  setRoutes,
+  selectedRoute,
+  setSelectedRoute,
+  quantumParams,
+  setQuantumParams,
+  classicalParams,
+  setClassicalParams,
+}: InteractiveMapProps) {
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
   const [showOptimizedMap, setShowOptimizedMap] = useState(false)
 
@@ -61,48 +80,9 @@ export function InteractiveMap() {
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null)
 
-  const [routes, setRoutes] = useState<RouteResult[]>([
-    {
-      solver: "quantum",
-      name: "HAWS-QAOA p=3",
-      tour: [0, 1, 4, 2, 3, 0],
-      length: 23.4,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 1847,
-      parameters: {
-        use: true,
-        p: 3,
-        shots: 1024,
-        optimizer: "COBYLA" as const,
-        penalties: { A: 1000, B: 1000 },
-        backend: "aer" as const,
-      },
-    },
-    {
-      solver: "classical",
-      name: "Nearest Neighbor + 2-opt",
-      tour: [0, 2, 1, 4, 3, 0],
-      length: 26.8,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 67,
-    },
-    {
-      solver: "classical",
-      name: "Simulated Annealing",
-      tour: [0, 3, 2, 1, 4, 0],
-      length: 25.1,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 234,
-    },
-  ])
-
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState(0)
   const [optimizationStatus, setOptimizationStatus] = useState("")
-  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
   const [mapType, setMapType] = useState<string>("All Routes")
@@ -111,27 +91,6 @@ export function InteractiveMap() {
   const [isSimulating, setIsSimulating] = useState(false)
   const [simulationTime, setSimulationTime] = useState(0) // 0 to 1
   const [simulationSpeed, setSimulationSpeed] = useState(5) // 1 to 10
-
-  const [quantumParams, setQuantumParams] = useState({
-    use: true,
-    p: 2,
-    shots: 1024,
-    optimizer: "COBYLA" as const,
-    penalties: { A: 1000, B: 1000 },
-    backend: "aer" as const,
-  })
-
-  const [classicalParams, setClassicalParams] = useState({
-    nn: true,
-    twoOpt: true,
-    anneal: true,
-    ortools: false,
-    simulatedAnnealingParams: {
-      initialTemp: 100,
-      coolingRate: 0.995,
-      maxIterations: 1000,
-    },
-  })
 
   useEffect(() => {
     try {
@@ -442,6 +401,35 @@ export function InteractiveMap() {
     }
   }
 
+  const handleImportRoute = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result
+        if (typeof text !== 'string') {
+          throw new Error("File is not a text file.")
+        }
+        const data = JSON.parse(text)
+
+        // Basic validation
+        if (data.stops && data.routes && data.selected_route) {
+          setStops(data.stops)
+          setRoutes(data.routes)
+          setSelectedRoute(data.selected_route)
+          if(data.quantum_params) setQuantumParams(data.quantum_params)
+          if(data.classical_params) setClassicalParams(data.classical_params)
+          setError(null)
+        } else {
+          throw new Error("Invalid route file format.")
+        }
+      } catch (error) {
+        console.error("Failed to parse route file:", error)
+        setError(error instanceof Error ? error.message : "Failed to parse route file.")
+      }
+    }
+    reader.readAsText(file)
+  }
+
   const shareConfiguration = useCallback(() => {
     const shareData = {
       stops: stops.map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, isDepot: s.isDepot })),
@@ -545,6 +533,34 @@ export function InteractiveMap() {
     if (solver === "quantum") return "#7B2CBF"
     if (name.includes("Simulated")) return "#06D6A0"
     return "#0D1B2A"
+  }
+
+  const handleSaveRoute = async () => {
+    if (!session) {
+      setError("You must be logged in to save a route.")
+      return
+    }
+
+    const name = prompt("Enter a name for this route:")
+    if (!name) return
+
+    const routeData = {
+      user_id: session.user.id,
+      name,
+      stops,
+      routes,
+      selected_route: selectedRoute,
+      quantum_params: quantumParams,
+      classical_params: classicalParams,
+    }
+
+    try {
+      const { error } = await supabase.from('routes').insert(routeData)
+      if (error) throw error
+      // Maybe show a success toast
+    } catch (error: any) {
+      setError(`Failed to save route: ${error.message}`)
+    }
   }
 
   return (
@@ -752,6 +768,7 @@ export function InteractiveMap() {
             onImportStops={handleImportStops}
             onExportStops={handleExportStops}
             onExportStopsJson={handleExportStopsJson}
+            onImportRoute={handleImportRoute}
           />
 
           {/* Optimization Button */}
@@ -792,6 +809,11 @@ export function InteractiveMap() {
                     Results ({routes.length})
                   </CardTitle>
                   <div className="flex gap-1">
+                    {session && (
+                      <Button size="sm" variant="outline" onClick={handleSaveRoute}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={shareConfiguration}>
                       <Share2 className="w-3 h-3" />
                     </Button>
