@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import polyline from "google-polyline";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +12,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U";
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "API key is not configured" },
+        { status: 500 }
+      );
+    }
 
     const origin = coordinates[0].reverse().join(",");
     const destination = coordinates[1].reverse().join(",");
@@ -38,6 +43,7 @@ export async function POST(request: NextRequest) {
         {
           type: "FeatureCollection",
           features: [],
+          steps: [],
         },
         { status: 200 }
       );
@@ -47,20 +53,21 @@ export async function POST(request: NextRequest) {
     const leg = route.legs[0];
     const steps = leg.steps;
 
-    const detailedPolyline = steps.flatMap(step => polyline.decode(step.polyline.points));
-
     const geojsonFeature = {
       type: "Feature",
       properties: {},
       geometry: {
         type: "LineString",
-        coordinates: detailedPolyline.map((p) => [p[1], p[0]]), // map to [lng, lat]
+        coordinates: require("google-polyline").decode(route.overview_polyline.points).map((p: number[]) => [p[1], p[0]]),
       },
     };
 
     return NextResponse.json({
       type: "FeatureCollection",
       features: [geojsonFeature],
+      steps: steps,
+      distance: leg.distance,
+      duration: leg.duration,
     });
   } catch (error) {
     console.error("Directions error:", error);
