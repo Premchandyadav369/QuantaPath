@@ -83,3 +83,19 @@ export interface DistanceMatrixRequest {
   mode: "distance" | "time"
   source: "google" | "openrouteservice" | "haversine"
 }
+
+export interface NavigationStep {
+  from: DeliveryStop
+  to: DeliveryStop
+  distance: number
+  duration: number // in minutes
+  bearing?: number
+  instruction?: string
+  direction?: "forward" | "left" | "right" | "backward" | "sharp-left" | "sharp-right" | "u-turn" | "straight"
+  turnInstructions?: Array<{
+    type?: string
+    instruction: string
+    distance: number
+    duration: number
+  }>
+}
