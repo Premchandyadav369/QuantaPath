@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Zap, BarChart3, Info, Download, Share2, RotateCcw } from "lucide-react"
+import { Settings, Zap, BarChart3, Info, Download, Share2, RotateCcw, Upload } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuantumParams {
@@ -44,6 +44,8 @@ interface AdvancedParameterControlsProps {
   onExport: () => void
   onShare: () => void
   isOptimizing: boolean
+  onImportStops: (file: File) => void
+  onExportStops: () => void
 }
 
 export function AdvancedParameterControls({
@@ -55,6 +57,8 @@ export function AdvancedParameterControls({
   onExport,
   onShare,
   isOptimizing,
+  onImportStops,
+  onExportStops,
 }: AdvancedParameterControlsProps) {
   const [activeTab, setActiveTab] = useState("quantum")
 
@@ -77,6 +81,13 @@ export function AdvancedParameterControls({
         [key]: value,
       },
     })
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      onImportStops(file)
+    }
   }
 
   const resetToDefaults = () => {
@@ -112,6 +123,29 @@ export function AdvancedParameterControls({
               Advanced Parameters
             </CardTitle>
             <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => document.getElementById("import-stops-input")?.click()} disabled={isOptimizing}>
+                    <Upload className="w-4 h-4" />
+                    <input
+                      type="file"
+                      id="import-stops-input"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".xlsx, .xls"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import stops from Excel</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onExportStops} disabled={isOptimizing}>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export stops to Excel</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button size="sm" variant="outline" onClick={onShare} disabled={isOptimizing}>

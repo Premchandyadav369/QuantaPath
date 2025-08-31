@@ -26,6 +26,7 @@ import {
   Route,
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
+import * as XLSX from "xlsx"
 import { AdvancedParameterControls } from "@/components/advanced-parameter-controls"
 import { GoogleMap } from "@/components/google-map"
 import { ResultsVisualization } from "@/components/results-visualization"
@@ -354,6 +355,62 @@ export function InteractiveMap() {
     URL.revokeObjectURL(url)
   }, [stops, quantumParams, classicalParams, routes, selectedRoute])
 
+  const handleImportStops = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result
+        const workbook = XLSX.read(data, { type: "array" })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const json = XLSX.utils.sheet_to_json<any>(worksheet)
+
+        const newStops: DeliveryStop[] = json.map((row, index) => {
+          const lat = parseFloat(row.Latitude)
+          const lng = parseFloat(row.Longitude)
+
+          if (isNaN(lat) || isNaN(lng)) {
+            throw new Error(`Invalid latitude or longitude for row ${index + 2}: ${row.Latitude}, ${row.Longitude}`)
+          }
+
+          return {
+            id: `stop${Date.now()}${index}`,
+            name: row.Name || `Stop ${index + 1}`,
+            lat,
+            lng,
+            isDepot: row["Is Depot"] === "true" || row["Is Depot"] === true,
+          }
+        })
+
+        setStops(newStops)
+        setError(null)
+      } catch (error) {
+        console.error("Failed to parse Excel file:", error)
+        setError(error instanceof Error ? error.message : "Failed to parse Excel file.")
+      }
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  const handleExportStops = () => {
+    try {
+      const dataToExport = stops.map(stop => ({
+        Name: stop.name,
+        Latitude: stop.lat,
+        Longitude: stop.lng,
+        "Is Depot": stop.isDepot || false,
+      }))
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Stops")
+      XLSX.writeFile(workbook, `quantapath-stops-${new Date().toISOString().split("T")[0]}.xlsx`)
+    } catch (error) {
+      console.error("Failed to export stops to Excel:", error)
+      setError("Failed to export stops to Excel.")
+    }
+  }
+
   const shareConfiguration = useCallback(() => {
     const shareData = {
       stops: stops.map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, isDepot: s.isDepot })),
@@ -646,6 +703,8 @@ export function InteractiveMap() {
             onExport={exportResults}
             onShare={shareConfiguration}
             isOptimizing={isOptimizing}
+            onImportStops={handleImportStops}
+            onExportStops={handleExportStops}
           />
 
           {/* Optimization Button */}
