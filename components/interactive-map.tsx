@@ -357,7 +357,7 @@ export function InteractiveMap() {
 
   const handleImportStops = (file: File) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result
         const workbook = XLSX.read(data, { type: "array" })
@@ -365,9 +365,23 @@ export function InteractiveMap() {
         const worksheet = workbook.Sheets[sheetName]
         const json = XLSX.utils.sheet_to_json<any>(worksheet)
 
-        const newStops: DeliveryStop[] = json.map((row, index) => {
-          const lat = parseFloat(row.Latitude)
-          const lng = parseFloat(row.Longitude)
+        const apiClient = ApiClient.getInstance()
+
+        const newStopsPromises = json.map(async (row, index) => {
+          let lat: number, lng: number;
+
+          if (row.Address) {
+            const results = await apiClient.geocode(row.Address)
+            if (results.length > 0) {
+              lat = results[0].lat
+              lng = results[0].lng
+            } else {
+              throw new Error(`Could not geocode address: ${row.Address}`)
+            }
+          } else {
+            lat = parseFloat(row.Latitude)
+            lng = parseFloat(row.Longitude)
+          }
 
           if (isNaN(lat) || isNaN(lng)) {
             throw new Error(`Invalid latitude or longitude for row ${index + 2}: ${row.Latitude}, ${row.Longitude}`)
@@ -382,6 +396,7 @@ export function InteractiveMap() {
           }
         })
 
+        const newStops = await Promise.all(newStopsPromises)
         setStops(newStops)
         setError(null)
       } catch (error) {
@@ -390,6 +405,22 @@ export function InteractiveMap() {
       }
     }
     reader.readAsArrayBuffer(file)
+  }
+
+  const handleExportStopsJson = () => {
+    try {
+      const dataStr = JSON.stringify(stops, null, 2)
+      const dataBlob = new Blob([dataStr], { type: "application/json" })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `quantapath-stops-${new Date().toISOString().split("T")[0]}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Failed to export stops to JSON:", error)
+      setError("Failed to export stops to JSON.")
+    }
   }
 
   const handleExportStops = () => {
@@ -705,6 +736,7 @@ export function InteractiveMap() {
             isOptimizing={isOptimizing}
             onImportStops={handleImportStops}
             onExportStops={handleExportStops}
+            onExportStopsJson={handleExportStopsJson}
           />
 
           {/* Optimization Button */}
