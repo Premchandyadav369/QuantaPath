@@ -482,13 +482,28 @@ export function InteractiveMap() {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery || !mapRef.current) return;
-    // This is a simplified search that just flies to the searched location
-    // if it has been selected from the autocomplete.
-    if(searchedLocation) {
+
+    if (searchedLocation) {
       mapRef.current.setCenter({ lat: searchedLocation.lat, lng: searchedLocation.lng });
       mapRef.current.setZoom(13);
+    } else {
+      try {
+        const apiClient = ApiClient.getInstance()
+        const results = await apiClient.geocode(searchQuery)
+        if (results.length > 0) {
+          const { lat, lng, name } = results[0]
+          setSearchedLocation({ lat, lng, name })
+          mapRef.current.setCenter({ lat, lng });
+          mapRef.current.setZoom(13);
+        } else {
+          setError("Location not found.")
+        }
+      } catch (error) {
+        console.error("Geocoding failed:", error)
+        setError("Failed to search for location.")
+      }
     }
   };
 
