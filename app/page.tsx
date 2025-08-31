@@ -1,13 +1,113 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
+import type { Session } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, Zap, BarChart3, Truck, Clock, Route, Cpu, GitBranch, Github, Linkedin } from "lucide-react"
+import { AuthComponent } from "@/components/auth"
 import { InteractiveMap } from "@/components/interactive-map"
+import { SavedRoutes } from "@/components/saved-routes"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import type { DeliveryStop, RouteResult } from "@/lib/types"
 
 export default function HomePage() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [stops, setStops] = useState<DeliveryStop[]>([
+    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
+    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
+    { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
+    { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
+    { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
+    { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
+    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
+    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
+  ])
+  const [routes, setRoutes] = useState<RouteResult[]>([
+    {
+      solver: "quantum",
+      name: "HAWS-QAOA p=3",
+      tour: [0, 1, 4, 2, 3, 0],
+      length: 23.4,
+      feasible: true,
+      violations: { pos: 0, city: 0 },
+      runtimeMs: 1847,
+      parameters: {
+        use: true,
+        p: 3,
+        shots: 1024,
+        optimizer: "COBYLA" as const,
+        penalties: { A: 1000, B: 1000 },
+        backend: "aer" as const,
+      },
+    },
+    {
+      solver: "classical",
+      name: "Nearest Neighbor + 2-opt",
+      tour: [0, 2, 1, 4, 3, 0],
+      length: 26.8,
+      feasible: true,
+      violations: { pos: 0, city: 0 },
+      runtimeMs: 67,
+    },
+    {
+      solver: "classical",
+      name: "Simulated Annealing",
+      tour: [0, 3, 2, 1, 4, 0],
+      length: 25.1,
+      feasible: true,
+      violations: { pos: 0, city: 0 },
+      runtimeMs: 234,
+    },
+  ])
+  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
+  const [quantumParams, setQuantumParams] = useState({
+    use: true,
+    p: 2,
+    shots: 1024,
+    optimizer: "COBYLA" as const,
+    penalties: { A: 1000, B: 1000 },
+    backend: "aer" as const,
+  })
+  const [classicalParams, setClassicalParams] = useState({
+    nn: true,
+    twoOpt: true,
+    anneal: true,
+    ortools: false,
+    simulatedAnnealingParams: {
+      initialTemp: 100,
+      coolingRate: 0.995,
+      maxIterations: 1000,
+    },
+  })
+
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLoadRoute = (route: any) => {
+    setStops(route.stops)
+    setRoutes(route.routes)
+    setSelectedRoute(route.selected_route)
+    setQuantumParams(route.quantum_params)
+    setClassicalParams(route.classical_params)
+  }
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -30,9 +130,7 @@ export default function HomePage() {
               <Button variant="ghost" size="sm">
                 GitHub
               </Button>
-              <Button size="sm" className="bg-accent hover:bg-accent/90">
-                Try Now <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+              <AuthComponent session={session} />
             </div>
           </div>
         </div>
@@ -67,8 +165,25 @@ export default function HomePage() {
 
           {/* Interactive Route Optimization Demo */}
           <div className="mt-16 max-w-6xl mx-auto">
-            <InteractiveMap />
+            <InteractiveMap
+              session={session}
+              stops={stops}
+              setStops={setStops}
+              routes={routes}
+              setRoutes={setRoutes}
+              selectedRoute={selectedRoute}
+              setSelectedRoute={setSelectedRoute}
+              quantumParams={quantumParams}
+              setQuantumParams={setQuantumParams}
+              classicalParams={classicalParams}
+              setClassicalParams={setClassicalParams}
+            />
           </div>
+          {session && (
+            <div className="mt-16 max-w-6xl mx-auto">
+              <SavedRoutes session={session} onLoadRoute={handleLoadRoute} />
+            </div>
+          )}
         </div>
       </section>
 
