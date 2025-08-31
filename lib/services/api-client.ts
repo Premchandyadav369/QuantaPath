@@ -32,6 +32,23 @@ export class ApiClient {
     return response.json()
   }
 
+  async geocode(address: string): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/api/geocode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ address }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || "Failed to geocode address")
+    }
+
+    return response.json()
+  }
+
   async optimizeRoutes(request: OptimizationRequest): Promise<OptimizationResponse> {
     const response = await fetch(`${this.baseUrl}/api/optimize`, {
       method: "POST",

@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Zap, BarChart3, Info, Download, Share2, RotateCcw, Upload } from "lucide-react"
+import { Settings, Zap, BarChart3, Info, Download, Share2, RotateCcw, Upload, FileJson } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuantumParams {
@@ -46,6 +46,7 @@ interface AdvancedParameterControlsProps {
   isOptimizing: boolean
   onImportStops: (file: File) => void
   onExportStops: () => void
+  onExportStopsJson: () => void
 }
 
 export function AdvancedParameterControls({
@@ -59,6 +60,7 @@ export function AdvancedParameterControls({
   isOptimizing,
   onImportStops,
   onExportStops,
+  onExportStopsJson,
 }: AdvancedParameterControlsProps) {
   const [activeTab, setActiveTab] = useState("quantum")
 
@@ -145,6 +147,14 @@ export function AdvancedParameterControls({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Export stops to Excel</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onExportStopsJson} disabled={isOptimizing}>
+                    <FileJson className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export stops to JSON</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
