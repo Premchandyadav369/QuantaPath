@@ -144,7 +144,7 @@ For a more rigorous, Qiskit-based implementation of the QAOA solver:
 -   **P R Kiran Kumar Reddy** – Operations & Optimization 🚀
 -   **Edupulapati Sai Praneeth** – Algorithms, Api's & Backend 🔧
 -   **Vyshwaran Pothuraju** – Full Stack Developer
--   **Sanjana Pasam** – UI/UX & Frontend Magic 🎨
+-   **Sanjana Pasam** – UI/UX & Frontend Magic 
 -   **Suhaeb Nawab Shaik**-Tester/Quality Analyst
 
 
