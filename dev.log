@@ -51,3 +51,21 @@
  GET / 200 in 279ms
  GET / 200 in 209ms
  ✓ Compiled in 2.3s (1338 modules)
+ ✓ Compiled in 1578ms (1338 modules)
+ ✓ Compiled in 370ms (1338 modules)
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
