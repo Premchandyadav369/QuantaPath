@@ -50,3 +50,4 @@
  POST /api/directions 200 in 53ms
  GET / 200 in 279ms
  GET / 200 in 209ms
+ ✓ Compiled in 2.3s (1338 modules)
