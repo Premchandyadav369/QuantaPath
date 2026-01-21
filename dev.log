@@ -1,11 +1,71 @@
 
-> my-v0-project@0.1.0 dev /app
+> my-v0-project@0.1.0 dev
 > next dev
 
    ▲ Next.js 15.2.4
-   - Local:        http://localhost:3003
-   - Network:      http://192.168.0.2:3003
-   - Environments: .env.local
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 3.9s
+ ✓ Ready in 2.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 28.6s (2791 modules)
+ GET / 200 in 31434ms
+ GET / 200 in 727ms
+ GET / 200 in 815ms
+ GET / 200 in 147ms
+ ○ Compiling /api/directions ...
+ ✓ Compiled /api/directions in 2.2s (2795 modules)
+ POST /api/directions 200 in 2517ms
+ POST /api/directions 200 in 2517ms
+ POST /api/directions 200 in 2530ms
+ POST /api/directions 200 in 2538ms
+ POST /api/directions 200 in 2556ms
+ POST /api/directions 200 in 2551ms
+ POST /api/directions 200 in 237ms
+ POST /api/directions 200 in 243ms
+ POST /api/directions 200 in 251ms
+ POST /api/directions 200 in 247ms
+ POST /api/directions 200 in 264ms
+ POST /api/directions 200 in 108ms
+ POST /api/directions 200 in 113ms
+ POST /api/directions 200 in 120ms
+ POST /api/directions 200 in 123ms
+ GET / 200 in 437ms
+ POST /api/directions 200 in 41ms
+ POST /api/directions 200 in 45ms
+ POST /api/directions 200 in 49ms
+ POST /api/directions 200 in 63ms
+ POST /api/directions 200 in 43ms
+ GET / 200 in 234ms
+ POST /api/directions 200 in 64ms
+ POST /api/directions 200 in 55ms
+ POST /api/directions 200 in 61ms
+ POST /api/directions 200 in 71ms
+ POST /api/directions 200 in 149ms
+ POST /api/directions 200 in 157ms
+ POST /api/directions 200 in 185ms
+ POST /api/directions 200 in 78ms
+ POST /api/directions 200 in 75ms
+ POST /api/directions 200 in 53ms
+ GET / 200 in 279ms
+ GET / 200 in 209ms
+ ✓ Compiled in 2.3s (1338 modules)
+ ✓ Compiled in 1578ms (1338 modules)
+ ✓ Compiled in 370ms (1338 modules)
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve '/app/node_modules/next/dist/client/components/metadata/async-metadata.js'
+
+https://nextjs.org/docs/messages/module-not-found

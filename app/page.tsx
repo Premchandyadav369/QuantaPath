@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,18 +22,26 @@ export default function HomePage() {
               <span className="text-xl font-bold">QuantaPath</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm">
-                Demo
-              </Button>
-              <Button variant="ghost" size="sm">
-                Benchmarks
-              </Button>
-              <Button variant="ghost" size="sm">
-                GitHub
-              </Button>
-              <Button size="sm" className="bg-accent hover:bg-accent/90">
-                Try Now <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+              <Link href="#interactive-demo">
+                <Button variant="ghost" size="sm">
+                  Demo
+                </Button>
+              </Link>
+              <Link href="#benchmark-results">
+                <Button variant="ghost" size="sm">
+                  Benchmarks
+                </Button>
+              </Link>
+              <a href="https://github.com/Premchandyadav369/QuantaPath-benchmarks" target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" size="sm">
+                  GitHub
+                </Button>
+              </a>
+              <Link href="#interactive-demo">
+                <Button size="sm" className="bg-accent hover:bg-accent/90">
+                  Try Now <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -54,19 +63,23 @@ export default function HomePage() {
               logistics optimization today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-accent hover:bg-accent/90">
-                <MapPin className="w-5 h-5 mr-2" />
-                Try Demo
-              </Button>
-              <Button size="lg" variant="outline">
-                <GitBranch className="w-5 h-5 mr-2" />
-                View GitHub
-              </Button>
+              <Link href="#interactive-demo">
+                <Button size="lg" className="bg-accent hover:bg-accent/90">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  Try Demo
+                </Button>
+              </Link>
+              <a href="https://github.com/Premchandyadav369/QuantaPath-benchmarks" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="outline">
+                  <GitBranch className="w-5 h-5 mr-2" />
+                  View GitHub
+                </Button>
+              </a>
             </div>
           </div>
 
           {/* Interactive Route Optimization Demo */}
-          <div className="mt-16 max-w-6xl mx-auto">
+          <div id="interactive-demo" className="mt-16 max-w-6xl mx-auto">
             <InteractiveMap />
           </div>
         </div>
@@ -233,7 +246,7 @@ export default function HomePage() {
       </section>
 
       {/* Benchmark Results Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="benchmark-results" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <BenchmarkDashboard />
         </div>
