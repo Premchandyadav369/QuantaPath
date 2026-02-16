@@ -47,6 +47,8 @@ interface AdvancedParameterControlsProps {
   onImportStops: (file: File) => void
   onExportStops: () => void
   onExportStopsJson: () => void
+  onExportStopsJson: () => void,
+  onImportRoute: (file: File) => void,
 }
 
 export function AdvancedParameterControls({
@@ -61,6 +63,7 @@ export function AdvancedParameterControls({
   onImportStops,
   onExportStops,
   onExportStopsJson,
+  onImportRoute,
 }: AdvancedParameterControlsProps) {
   const [activeTab, setActiveTab] = useState("quantum")
 
@@ -89,6 +92,13 @@ export function AdvancedParameterControls({
     const file = event.target.files?.[0]
     if (file) {
       onImportStops(file)
+    }
+  }
+
+  const handleRouteFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      onImportRoute(file)
     }
   }
 
@@ -139,6 +149,21 @@ export function AdvancedParameterControls({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Import stops from Excel</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => document.getElementById("import-route-input")?.click()} disabled={isOptimizing}>
+                    <FileJson className="w-4 h-4" />
+                    <input
+                      type="file"
+                      id="import-route-input"
+                      className="hidden"
+                      onChange={handleRouteFileChange}
+                      accept=".json"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import route from JSON</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
