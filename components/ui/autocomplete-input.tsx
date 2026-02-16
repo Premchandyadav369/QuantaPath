@@ -6,9 +6,10 @@ import type { PlacePicker as PlacePickerWC } from "@googlemaps/extended-componen
 
 interface AutocompleteInputProps {
   onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void
+  className?: string
 }
 
-export function AutocompleteInput({ onPlaceSelect }: AutocompleteInputProps) {
+export function AutocompleteInput({ onPlaceSelect, className }: AutocompleteInputProps) {
   const pickerRef = React.useRef<PlacePickerWC>(null)
 
   React.useEffect(() => {
@@ -27,12 +28,10 @@ export function AutocompleteInput({ onPlaceSelect }: AutocompleteInputProps) {
   }, [onPlaceSelect])
 
   return (
-    <div className="w-full">
-      <PlacePicker
-        ref={pickerRef}
-        placeholder="Search for a town or address..."
-        className="w-full"
-      />
-    </div>
+    <PlacePicker
+      ref={pickerRef}
+      placeholder="Search for a town or address..."
+      className={className}
+    />
   )
 }

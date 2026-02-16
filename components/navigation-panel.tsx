@@ -16,174 +16,16 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
 } from "lucide-react"
-import type { DeliveryStop, RouteResult } from "@/lib/types"
-import { DistanceService } from "@/lib/services/distance-service"
-import { useEffect, useState, useCallback } from "react"
-
-interface NavigationStep {
-  from: DeliveryStop
-  to: DeliveryStop
-  distance: number
-  duration: number // in minutes
-  direction: "forward" | "left" | "right" | "backward" | "sharp-left" | "sharp-right" | "u-turn" | "straight"
-  bearing: number
-  instruction: string
-  turnInstructions?: Array<{
-    type: string
-    instruction: string
-    distance: number
-    duration: number
-  }>
-}
+import type { DeliveryStop, RouteResult, NavigationStep } from "@/lib/types"
 
 interface NavigationPanelProps {
   stops: DeliveryStop[]
   selectedRoute: RouteResult | null
+  navigationSteps: NavigationStep[]
+  isLoading: boolean
 }
 
-export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) {
-  const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371 // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180
-    const dLng = ((lng2 - lng1) * Math.PI) / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
-  }
-
-  const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const dLng = ((lng2 - lng1) * Math.PI) / 180
-    const lat1Rad = (lat1 * Math.PI) / 180
-    const lat2Rad = (lat2 * Math.PI) / 180
-
-    const y = Math.sin(dLng) * Math.cos(lat2Rad)
-    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng)
-
-    const bearing = (Math.atan2(y, x) * 180) / Math.PI
-    return (bearing + 360) % 360
-  }
-
-  const getDirection = (currentBearing: number, previousBearing: number): NavigationStep["direction"] => {
-    if (previousBearing === 0) return "forward" // First step
-
-    let angleDiff = currentBearing - previousBearing
-    if (angleDiff < 0) angleDiff += 360
-    if (angleDiff > 360) angleDiff -= 360
-
-    if (angleDiff >= 315 || angleDiff <= 45) return "forward"
-    if (angleDiff > 45 && angleDiff <= 135) return "right"
-    if (angleDiff > 135 && angleDiff <= 225) return "backward"
-    return "left"
-  }
-
-  const generateInstruction = (from: DeliveryStop, to: DeliveryStop, direction: string, distance: number): string => {
-    const directionText =
-      {
-        forward: "Continue straight",
-        left: "Turn left",
-        right: "Turn right",
-        backward: "Make a U-turn",
-      }[direction] || "Continue"
-
-    if (from.isDepot) {
-      return `Start from ${from.name} and head towards ${to.name}`
-    }
-
-    if (to.isDepot) {
-      return `${directionText} and return to ${to.name} (${distance.toFixed(1)} km)`
-    }
-
-    return `${directionText} towards ${to.name} (${distance.toFixed(1)} km)`
-  }
-
-  const mapInstructionTypeToDirection = (type: string): NavigationStep["direction"] => {
-    switch (type) {
-      case "left":
-        return "left"
-      case "right":
-        return "right"
-      case "sharp-left":
-        return "sharp-left"
-      case "sharp-right":
-        return "sharp-right"
-      case "u-turn":
-        return "u-turn"
-      case "straight":
-        return "straight"
-      default:
-        return "forward"
-    }
-  }
-
-  const generateFallbackInstruction = (from: DeliveryStop, to: DeliveryStop, isFirst: boolean): string => {
-    if (isFirst && from.isDepot) {
-      return `Start from ${from.name} and head towards ${to.name}`
-    }
-    if (to.isDepot) {
-      return `Return to ${to.name}`
-    }
-    return `Continue to ${to.name}`
-  }
-
-  // Calculate navigation steps from the route (fallback method)
-  const calculateNavigationSteps = useCallback((): NavigationStep[] => {
-    if (!selectedRoute) return []
-    const steps: NavigationStep[] = []
-    const tour = selectedRoute.tour
-
-    for (let i = 0; i < tour.length - 1; i++) {
-      const fromIndex = tour[i]
-      const toIndex = tour[i + 1]
-      const from = stops[fromIndex]
-      const to = stops[toIndex]
-
-      if (!from || !to) continue
-
-      // Calculate distance using Haversine formula
-      const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
-
-      // Estimate duration (assuming average speed of 40 km/h in city)
-      const duration = (distance / 40) * 60 // minutes
-
-      // Calculate bearing and direction
-      const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
-      const direction = getDirection(
-        bearing,
-        i > 0
-          ? calculateBearing(
-              stops[tour[i - 1]]?.lat || from.lat,
-              stops[tour[i - 1]]?.lng || from.lng,
-              from.lat,
-              from.lng,
-            )
-          : 0,
-      )
-
-      const instruction = generateInstruction(from, to, direction, distance)
-
-      steps.push({
-        from,
-        to,
-        distance,
-        duration,
-        direction,
-        bearing,
-        instruction,
-      })
-    }
-
-    return steps
-  }, [stops, selectedRoute])
-
-  useEffect(() => {
-    setNavigationSteps(calculateNavigationSteps())
-  }, [selectedRoute, stops, calculateNavigationSteps])
-
+export function NavigationPanel({ stops, selectedRoute, navigationSteps, isLoading }: NavigationPanelProps) {
   if (!selectedRoute || stops.length < 2) {
     return (
       <Card>
@@ -203,7 +45,7 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
     )
   }
 
-  const getDirectionIcon = (direction: string) => {
+  const getDirectionIcon = (direction?: string) => {
     switch (direction) {
       case "forward":
       case "straight":
@@ -256,28 +98,19 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
           {navigationSteps.map((step, index) => (
             <div key={index}>
               <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    {getDirectionIcon(step.direction)}
-                  </div>
-                </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">Step {index + 1}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {step.direction}
-                    </Badge>
+                    <span className="text-sm font-medium">
+                      {step.from.name} to {step.to.name}
+                    </span>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-2">{step.instruction}</p>
-
-                  {step.turnInstructions && step.turnInstructions.length > 1 && (
-                    <div className="mb-2 p-2 bg-muted/20 rounded text-xs">
-                      <div className="font-medium mb-1">Detailed Instructions:</div>
-                      {step.turnInstructions.slice(1).map((turn, turnIndex) => (
-                        <div key={turnIndex} className="text-muted-foreground">
-                          • {turn.instruction} ({turn.distance.toFixed(1)} km)
+                  {step.turnInstructions && (
+                    <div className="mb-2 p-2 bg-muted/20 rounded text-xs space-y-1">
+                      {step.turnInstructions.map((turn, turnIndex) => (
+                        <div key={turnIndex} className="text-muted-foreground flex items-start gap-2">
+                          <div className="mt-0.5">{getDirectionIcon(turn.type)}</div>
+                          <span>{turn.instruction} ({turn.distance.toFixed(0)} m)</span>
                         </div>
                       ))}
                     </div>
@@ -291,10 +124,6 @@ export function NavigationPanel({ stops, selectedRoute }: NavigationPanelProps) 
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {Math.round(step.duration)} min
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Navigation className="w-3 h-3" />
-                      {Math.round(step.bearing)}°
                     </div>
                   </div>
                 </div>

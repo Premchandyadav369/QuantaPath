@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  APIProvider,
   Map,
   AdvancedMarker,
   Pin,
@@ -20,13 +19,10 @@ function RoutePolylines({
   selectedRoute: RouteResult | null
 }) {
   const map = useMap()
-  const [polylines, setPolylines] = useState<google.maps.Polyline[]>([])
 
   useEffect(() => {
     if (!map) return
 
-    // Clear existing polylines
-    polylines.forEach((p) => p.setMap(null))
     const newPolylines: google.maps.Polyline[] = []
 
     const fetchAndDrawRoute = async (route: RouteResult) => {
@@ -99,12 +95,27 @@ function RoutePolylines({
     }
 
     routes.forEach(fetchAndDrawRoute)
-    setPolylines(newPolylines)
 
     return () => {
       newPolylines.forEach((p) => p.setMap(null))
     }
   }, [map, routes, stops, selectedRoute])
+
+  return null
+}
+
+function MapInner({
+  onMapReady,
+}: {
+  onMapReady?: (map: google.maps.Map | null) => void
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (onMapReady && map) {
+      onMapReady(map)
+    }
+  }, [map, onMapReady])
 
   return null
 }
@@ -138,49 +149,45 @@ export function GoogleMap({
   simulationTime: number
   isSimulating: boolean
 }) {
-  const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
-
   const position = { lat: 16.5062, lng: 80.648 }
 
   return (
-    <APIProvider apiKey={apiKey} libraries={['places']}>
-      <Map
-        defaultCenter={position}
-        defaultZoom={12}
-        mapId="a3b4c5d6e7f8g9h0"
-        gestureHandling={"greedy"}
-        disableDefaultUI={true}
-        onClick={(e) =>
-          onMapClick(e.detail.latLng?.lat ?? 0, e.detail.latLng?.lng ?? 0)
-        }
-        onCameraChanged={(e) => onMapReady && onMapReady(e.map)}
-      >
-        {stops.map((stop) => (
-          <AdvancedMarker
-            key={stop.id}
-            position={{ lat: stop.lat, lng: stop.lng }}
-            draggable={!stop.isDepot && !isOptimizing}
-            onDragEnd={(e) =>
-              onStopMove(
-                stop.id,
-                e.latLng?.lat() ?? 0,
-                e.latLng?.lng() ?? 0
-              )
-            }
-          >
-            <Pin
-              background={stop.isDepot ? "#0D1B2A" : "#7B2CBF"}
-              borderColor={"white"}
-              glyphColor={"white"}
-            />
-          </AdvancedMarker>
-        ))}
-        <RoutePolylines
-          routes={routes}
-          stops={stopsForRoutes}
-          selectedRoute={selectedRoute}
-        />
-      </Map>
-    </APIProvider>
+    <Map
+      defaultCenter={position}
+      defaultZoom={12}
+      mapId="a3b4c5d6e7f8g9h0"
+      gestureHandling={"greedy"}
+      disableDefaultUI={true}
+      onClick={(e) =>
+        onMapClick(e.detail.latLng?.lat ?? 0, e.detail.latLng?.lng ?? 0)
+      }
+    >
+      <MapInner onMapReady={onMapReady} />
+      {stops.map((stop) => (
+        <AdvancedMarker
+          key={stop.id}
+          position={{ lat: stop.lat, lng: stop.lng }}
+          draggable={!stop.isDepot && !isOptimizing}
+          onDragEnd={(e) =>
+            onStopMove(
+              stop.id,
+              e.latLng?.lat() ?? 0,
+              e.latLng?.lng() ?? 0
+            )
+          }
+        >
+          <Pin
+            background={stop.isDepot ? "#0D1B2A" : "#7B2CBF"}
+            borderColor={"white"}
+            glyphColor={"white"}
+          />
+        </AdvancedMarker>
+      ))}
+      <RoutePolylines
+        routes={routes}
+        stops={stopsForRoutes}
+        selectedRoute={selectedRoute}
+      />
+    </Map>
   )
 }

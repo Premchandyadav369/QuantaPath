@@ -35,7 +35,9 @@ import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calcula
 import { SimulationControls } from "@/components/simulation-controls"
 import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
+import type { DeliveryStop, OptimizationRequest, RouteResult, NavigationStep } from "@/lib/types"
+import { APIProvider } from "@vis.gl/react-google-maps"
+import { calculateDistance, calculateBearing, getDirection } from "@/lib/utils"
 
 const DynamicAutocompleteInput = dynamic(
   () => import("@/components/ui/autocomplete-input").then((mod) => mod.AutocompleteInput),
@@ -106,6 +108,8 @@ export function InteractiveMap() {
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
   const [mapType, setMapType] = useState<string>("All Routes")
+  const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
+  const [isFetchingDirections, setIsFetchingDirections] = useState(false)
 
   // Simulation state
   const [isSimulating, setIsSimulating] = useState(false)
@@ -336,6 +340,90 @@ export function InteractiveMap() {
     handleResetSimulation();
   }, [selectedRoute]);
 
+  useEffect(() => {
+    const fetchDirectionsForRoute = async () => {
+      if (!selectedRoute) {
+        setNavigationSteps([])
+        return
+      }
+
+      setIsFetchingDirections(true)
+      const steps: NavigationStep[] = []
+      const tour = selectedRoute.tour
+
+      for (let i = 0; i < tour.length - 1; i++) {
+        const fromIndex = tour[i]
+        const toIndex = tour[i + 1]
+        const from = processedStops[fromIndex]
+        const to = processedStops[toIndex]
+
+        if (!from || !to) continue
+
+        const coordinates = [
+          [from.lng, from.lat],
+          [to.lng, to.lat],
+        ]
+
+        try {
+          const response = await fetch("/api/directions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ coordinates }),
+          })
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch directions: ${response.statusText}`
+            )
+          }
+
+          const data = await response.json()
+          if (data.steps && data.steps.length > 0) {
+            steps.push({
+              from,
+              to,
+              distance: data.distance.value / 1000, // meters to km
+              duration: data.duration.value / 60, // seconds to minutes
+              turnInstructions: data.steps.map((step: any) => ({
+                instruction: step.html_instructions.replace(/<[^>]*>/g, ""),
+                distance: step.distance.value,
+                duration: step.duration.value,
+              })),
+            })
+          } else {
+            throw new Error("No steps returned from API")
+          }
+        } catch (error) {
+          console.error("Error fetching directions, using fallback:", error)
+          const distance = calculateDistance(from.lat, from.lng, to.lat, to.lng)
+          const duration = (distance / 40) * 60 // Assume 40 km/h average speed
+          const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng)
+          const prevBearing = i > 0 ? calculateBearing(processedStops[tour[i-1]].lat, processedStops[tour[i-1]].lng, from.lat, from.lng) : -1
+          const direction = getDirection(bearing, prevBearing)
+
+          steps.push({
+            from,
+            to,
+            distance,
+            duration,
+            bearing,
+            direction,
+            instruction: `Head ${direction} from ${from.name} to ${to.name}`,
+            turnInstructions: [{
+              instruction: `Could not fetch detailed directions. Proceed towards ${to.name}.`,
+              distance: distance * 1000,
+              duration: duration * 60,
+            }]
+          })
+        }
+      }
+      setNavigationSteps(steps)
+      setIsFetchingDirections(false)
+    }
+
+    fetchDirectionsForRoute()
+  }, [selectedRoute, processedStops])
+
   const exportResults = useCallback(() => {
     const exportData = {
       timestamp: new Date().toISOString(),
@@ -548,10 +636,14 @@ export function InteractiveMap() {
   }
 
   return (
-    <div className="space-y-6">
-      {routes.length > 0 && !isOptimizing && (
-        <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg p-4">
-          <div className="flex items-center gap-3">
+    <APIProvider
+      apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
+      libraries={["places"]}
+    >
+      <div className="space-y-6">
+        {routes.length > 0 && !isOptimizing && (
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg p-4">
+            <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary" />
             </div>
@@ -603,7 +695,10 @@ export function InteractiveMap() {
                 </div>
               </div>
               <div className="flex gap-2 mb-4">
-                <DynamicAutocompleteInput onPlaceSelect={handlePlaceSelect} />
+                <DynamicAutocompleteInput
+                  onPlaceSelect={handlePlaceSelect}
+                  className="w-full"
+                />
                 <Button onClick={handleSearch} disabled={isOptimizing}>
                   <Search className="w-4 h-4" />
                 </Button>
@@ -904,7 +999,12 @@ export function InteractiveMap() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <ResultsVisualization routes={routes} selectedRoute={selectedRoute} />
-        <NavigationPanel stops={processedStops} selectedRoute={selectedRoute} />
+        <NavigationPanel
+          stops={processedStops}
+          selectedRoute={selectedRoute}
+          navigationSteps={navigationSteps}
+          isLoading={isFetchingDirections}
+        />
       </div>
 
       {showOptimizedMap && selectedRoute && (
@@ -963,5 +1063,6 @@ export function InteractiveMap() {
         </Card>
       )}
     </div>
+    </APIProvider>
   )
 }

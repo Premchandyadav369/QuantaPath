@@ -1,14 +1,13 @@
 "use client"
 
 import {
-  APIProvider,
   Map,
   AdvancedMarker,
   Pin,
   useMap,
 } from "@vis.gl/react-google-maps"
 import type { DeliveryStop, RouteResult } from "@/lib/types"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 
 interface GoogleOptimizedRouteMapProps {
   stops: DeliveryStop[]
@@ -30,15 +29,14 @@ function getRouteColor(solver: "quantum" | "classical", name: string) {
 
 function RoutePolylines({ routes, stops }: { routes: RouteResult[]; stops: DeliveryStop[] }) {
   const map = useMap()
-  const [polylines, setPolylines] = useState<google.maps.Polyline[]>([])
 
   useEffect(() => {
     if (!map) return
 
-    polylines.forEach((p) => p.setMap(null))
+    let newPolylines: (google.maps.Polyline | null)[] = []
 
     const fetchAndDrawRoutes = async () => {
-      const newPolylines = await Promise.all(
+      newPolylines = await Promise.all(
         routes.map(async (route) => {
           const tourStops = route.tour
             .map((stopIndex) => stops[stopIndex])
@@ -82,7 +80,7 @@ function RoutePolylines({ routes, stops }: { routes: RouteResult[]; stops: Deliv
               fullPath = [
                 ...fullPath,
                 { lat: startStop.lat, lng: startStop.lng },
-                { lat: endStop.lat, lng: endStop.lng },
+                { lat: endStop.lat, lng: endStop.lat },
               ]
             }
           }
@@ -98,13 +96,12 @@ function RoutePolylines({ routes, stops }: { routes: RouteResult[]; stops: Deliv
           return newPolyline
         })
       )
-      setPolylines(newPolylines.filter(Boolean) as google.maps.Polyline[])
     }
 
     fetchAndDrawRoutes()
 
     return () => {
-      polylines.forEach((p) => p.setMap(null))
+      newPolylines.forEach((p) => p && p.setMap(null))
     }
   }, [map, routes, stops])
 
@@ -115,33 +112,29 @@ export function GoogleOptimizedRouteMap({
   stops,
   routes,
 }: GoogleOptimizedRouteMapProps) {
-  const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
-
   const position = { lat: 16.5062, lng: 80.648 }
 
   return (
-    <APIProvider apiKey={apiKey} libraries={["places"]}>
-      <Map
-        defaultCenter={position}
-        defaultZoom={12}
-        mapId="a3b4c5d6e7f8g9h0"
-        gestureHandling={"greedy"}
-        disableDefaultUI={true}
-      >
-        {stops.map((stop) => (
-          <AdvancedMarker
-            key={stop.id}
-            position={{ lat: stop.lat, lng: stop.lng }}
-          >
-            <Pin
-              background={stop.isDepot ? "#0D1B2A" : "#7B2CBF"}
-              borderColor={"white"}
-              glyphColor={"white"}
-            />
-          </AdvancedMarker>
-        ))}
-        <RoutePolylines routes={routes} stops={stops} />
-      </Map>
-    </APIProvider>
+    <Map
+      defaultCenter={position}
+      defaultZoom={12}
+      mapId="a3b4c5d6e7f8g9h0"
+      gestureHandling={"greedy"}
+      disableDefaultUI={true}
+    >
+      {stops.map((stop) => (
+        <AdvancedMarker
+          key={stop.id}
+          position={{ lat: stop.lat, lng: stop.lng }}
+        >
+          <Pin
+            background={stop.isDepot ? "#0D1B2A" : "#7B2CBF"}
+            borderColor={"white"}
+            glyphColor={"white"}
+          />
+        </AdvancedMarker>
+      ))}
+      <RoutePolylines routes={routes} stops={stops} />
+    </Map>
   )
 }
