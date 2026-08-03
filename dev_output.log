@@ -1,5 +1,5 @@
 
-> my-v0-project@0.1.0 dev
+> my-v0-project@0.1.0 dev /app
 > next dev
 
    ▲ Next.js 15.2.8
@@ -7,43 +7,43 @@
    - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 2.3s
+ ✓ Ready in 2.9s
  ○ Compiling / ...
- ✓ Compiled / in 10.9s (2848 modules)
- ✓ Compiled in 423ms (1387 modules)
- GET / 200 in 13191ms
+ ✓ Compiled / in 11.4s (2854 modules)
+ GET / 200 in 14037ms
  ○ Compiling /api/directions ...
- ✓ Compiled /api/directions in 2.1s (2870 modules)
- POST /api/directions 200 in 2365ms
- POST /api/directions 200 in 2376ms
- POST /api/directions 200 in 2384ms
- POST /api/directions 200 in 2379ms
- POST /api/directions 200 in 2393ms
- POST /api/directions 200 in 2406ms
- POST /api/directions 200 in 54ms
- POST /api/directions 200 in 60ms
- POST /api/directions 200 in 68ms
- POST /api/directions 200 in 70ms
- POST /api/directions 200 in 66ms
- POST /api/directions 200 in 80ms
+ ✓ Compiled /api/directions in 1731ms (2876 modules)
+ POST /api/directions 200 in 2025ms
+ POST /api/directions 200 in 2044ms
+ POST /api/directions 200 in 2054ms
+ POST /api/directions 200 in 2057ms
+ POST /api/directions 200 in 2070ms
+ POST /api/directions 200 in 2071ms
+ POST /api/directions 200 in 84ms
+ POST /api/directions 200 in 64ms
+ POST /api/directions 200 in 75ms
+ POST /api/directions 200 in 76ms
+ POST /api/directions 200 in 130ms
+ POST /api/directions 200 in 152ms
+ POST /api/directions 200 in 107ms
+ POST /api/directions 200 in 107ms
  POST /api/directions 200 in 49ms
- POST /api/directions 200 in 59ms
- POST /api/directions 200 in 68ms
- POST /api/directions 200 in 71ms
- POST /api/directions 200 in 61ms
- POST /api/directions 200 in 66ms
- POST /api/directions 200 in 46ms
- POST /api/directions 200 in 48ms
- POST /api/directions 200 in 49ms
- POST /api/directions 200 in 56ms
- POST /api/directions 200 in 60ms
- POST /api/directions 200 in 70ms
- POST /api/directions 200 in 42ms
- POST /api/directions 200 in 43ms
- POST /api/directions 200 in 54ms
- POST /api/directions 200 in 61ms
+ POST /api/directions 200 in 58ms
+ POST /api/directions 200 in 130ms
  POST /api/directions 200 in 34ms
- POST /api/directions 200 in 45ms
+ POST /api/directions 200 in 51ms
+ POST /api/directions 200 in 46ms
+ POST /api/directions 200 in 58ms
+ POST /api/directions 200 in 67ms
+ POST /api/directions 200 in 143ms
+ POST /api/directions 200 in 38ms
+ POST /api/directions 200 in 53ms
+ POST /api/directions 200 in 41ms
+ POST /api/directions 200 in 36ms
+ POST /api/directions 200 in 30ms
+ POST /api/directions 200 in 32ms
+ POST /api/directions 200 in 37ms
  ○ Compiling /api/ai-advisor ...
- ✓ Compiled /api/ai-advisor in 673ms (2872 modules)
- POST /api/ai-advisor 200 in 3606ms
+ ✓ Compiled /api/ai-advisor in 685ms (2878 modules)
+ POST /api/ai-advisor 200 in 4449ms
+ POST /api/ai-advisor 200 in 4312ms

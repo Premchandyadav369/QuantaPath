@@ -30,15 +30,27 @@
 
 **QuantaPath** is a web-based application that demonstrates how **quantum computing** can optimize **real-world logistics problems**. It provides a clean and interactive interface for finding optimal delivery routes using a simulated quantum algorithm and comparing the results with classical solvers.
 
-## ✨ Key Features
+## ✨ Key Features & "WOW" Factor
 
+- 🤖 **AI Logistics Copilot**: An intelligent AI assistant that analyzes optimized routes in real time. It explains why the selected route is optimal, identifies bottlenecks, predicts delays, recommends alternatives, and answers natural-language logistics questions via a sleek futuristic chat UI.
 - 🗺️ **Interactive Map**: Add delivery stops easily by clicking on the map or entering addresses. You can also drag and drop stops to update their locations.
 - ⚛️ **Quantum vs. Classical Comparison**: Benchmark the performance of a simulated **HAWS-QAOA** (Hybrid Adaptive Warm-Start QAOA) quantum algorithm against classical solvers like **Nearest Neighbor** and **Simulated Annealing**.
-- ❤️ **Like Feature**: Save your favorite routes by clicking the heart icon next to them.
 - ⚙️ **Advanced Parameter Tuning**: Fine-tune the settings for both quantum and classical solvers to gain deeper insights into their behavior.
 - 📊 **Interactive Performance Analytics**: Visualize performance with comprehensive and interactive dashboards and efficiency comparisons.
 - 🌱 **Carbon Footprint Estimation**: Calculate the estimated environmental impact of the generated routes in both USD and INR.
 - 📍 **Real-Time Navigation**: Get turn-by-turn directions for the optimized route via the **OpenRouteService**.
+
+### 🚀 Upcoming "WOW" Features
+- **Digital Twin 3D Logistics Simulator**: Realistic 3D visualization of vehicles, warehouses, roads, and deliveries using Three.js.
+- **Multi-Objective Optimization Studio**: Optimize for cost, distance, carbon emissions, delivery time, or balanced objectives.
+- **Quantum Analytics Dashboard**: Professional research-grade analytics with publication-quality visualizations.
+- **Scenario Simulation Lab**: "What happens if..." Interactive simulator for road closures, severe traffic, bad weather, etc.
+- **Optimization Battle Arena**: Algorithms compete live with real-time leaderboards.
+- **Explainable Quantum Optimization**: Explain every optimization decision with edge importance heatmaps.
+- **Sustainability Intelligence Center**: Beyond carbon emissions with ESG sustainability scores and energy efficiency.
+- **Enterprise Fleet Command Center**: Professional logistics management dashboard.
+- **Research & Benchmark Mode**: Conference/publication-ready benchmarking.
+- **Quantum Mission Control**: Futuristic dashboard inspired by NASA control rooms.
 
 ---
 

@@ -3,25 +3,46 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { routeData } = body
+    const { routeData, messages = [] } = body
 
     if (!routeData) {
       return NextResponse.json({ error: "Route data is required" }, { status: 400 })
     }
 
-    const prompt = `Analyze this delivery route optimization and explain why the quantum solver chose this route.
-Keep the explanation concise and focus on:
-- why it might be the shortest edge
-- if it avoided congestion
-- if it is a balanced path
-- if it reduced emissions
-- what is the confidence level
+    const systemPrompt = `You are an AI Logistics Copilot and Route Optimization Advisor.
+You are assisting a user in a futuristic logistics dashboard (QuantaPath).
+The user has just optimized a route using a Quantum solver (HAWS-QAOA) or a Classical solver.
+Your goal is to explain why the route was selected, identify bottlenecks, predict delays, recommend alternatives, estimate costs, and answer questions.
 
-Natural language explanation. Format using markdown. Be encouraging and informative.
+Be concise, informative, and professional. Format your response with markdown. Use lists and bold text for readability.
 
-Data:
+Current Route Data Context:
 ${JSON.stringify(routeData, null, 2)}
 `
+
+    let apiMessages = [
+        { role: "system", content: systemPrompt }
+    ];
+
+    if (messages.length === 0) {
+        // Initial explanation request
+        apiMessages.push({
+            role: "user",
+            content: `Analyze this delivery route optimization and explain why the solver chose this route.
+Keep the explanation concise and focus on:
+- why it might be the shortest edge
+- if it avoids congestion (hypothetically based on the data)
+- if it is a balanced path
+- if it reduces emissions
+- what is the confidence level
+
+Natural language explanation. Format using markdown. Be encouraging and informative.`
+        });
+    } else {
+        // Chat continuation
+        apiMessages = apiMessages.concat(messages);
+    }
+
 
     const aiResponse = await fetch("https://api.k2think.ai/v1/chat/completions", {
       method: "POST",
@@ -32,10 +53,7 @@ ${JSON.stringify(routeData, null, 2)}
       },
       body: JSON.stringify({
         model: "MBZUAI-IFM/K2-Think-v2",
-        messages: [
-          { role: "system", content: "You are an AI logistics and route optimization advisor." },
-          { role: "user", content: prompt }
-        ],
+        messages: apiMessages,
         stream: false
       })
     })
