@@ -6,6 +6,16 @@ import { InteractiveMap } from "@/components/interactive-map"
 import { BenchmarkDashboard } from "@/components/benchmark-dashboard"
 import { EfficiencyComparison } from "@/components/efficiency-comparison"
 import { CarbonFootprintCalculator } from "@/components/carbon-footprint-calculator"
+import { AICopilot } from "@/components/ai-copilot"
+import { DigitalTwin3D } from "@/components/digital-twin"
+import { MultiObjectiveOptimizer } from "@/components/multi-objective-optimizer"
+import { QuantumAnalyticsDashboard } from "@/components/quantum-analytics"
+import { ScenarioSimulator } from "@/components/scenario-simulator"
+import { BattleArena } from "@/components/battle-arena"
+import { ExplainableAI } from "@/components/explainable-ai"
+import { SustainabilityDashboard } from "@/components/sustainability-dashboard"
+import { FleetCommandCenter } from "@/components/fleet-command"
+import { ResearchBenchmarkMode } from "@/components/research-benchmark"
 
 export default function HomePage() {
   return (
@@ -265,6 +275,41 @@ export default function HomePage() {
           </div>
 
           <CarbonFootprintCalculator routes={[]} selectedRoute={null} />
+        </div>
+      </section>
+
+      {/* NEW FEATURES SECTION */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/10">
+        <div className="max-w-7xl mx-auto space-y-12">
+
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Quantum Enterprise Suite</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Next-generation tools integrating AI, 3D visualization, and deep analytics.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            <AICopilot />
+            <DigitalTwin3D />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            <MultiObjectiveOptimizer />
+            <ScenarioSimulator />
+          </div>
+
+          <QuantumAnalyticsDashboard />
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            <BattleArena />
+            <ExplainableAI />
+          </div>
+
+          <SustainabilityDashboard />
+          <FleetCommandCenter />
+          <ResearchBenchmarkMode />
+
         </div>
       </section>
 
