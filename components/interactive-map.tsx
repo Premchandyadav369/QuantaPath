@@ -36,6 +36,7 @@ import { SimulationControls } from "@/components/simulation-controls"
 import { GoogleOptimizedRouteMap } from "@/components/google-optimized-route-map"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { DeliveryStop, OptimizationRequest, RouteResult } from "@/lib/types"
+import { AIRouteAdvisor } from "@/components/ai-route-advisor"
 
 const DynamicAutocompleteInput = dynamic(
   () => import("@/components/ui/autocomplete-input").then((mod) => mod.AutocompleteInput),
@@ -856,6 +857,10 @@ export function InteractiveMap() {
                   <div className="text-xs text-muted-foreground pt-2 border-t">
                     Liked routes: {likedRoutes.length}
                   </div>
+                )}
+
+                {selectedRoute?.solver === "quantum" && (
+                  <AIRouteAdvisor routeData={selectedRoute} />
                 )}
 
                 {routes.length > 1 && (

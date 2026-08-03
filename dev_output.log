@@ -1,0 +1,49 @@
+
+> my-v0-project@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.8
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 10.9s (2848 modules)
+ ✓ Compiled in 423ms (1387 modules)
+ GET / 200 in 13191ms
+ ○ Compiling /api/directions ...
+ ✓ Compiled /api/directions in 2.1s (2870 modules)
+ POST /api/directions 200 in 2365ms
+ POST /api/directions 200 in 2376ms
+ POST /api/directions 200 in 2384ms
+ POST /api/directions 200 in 2379ms
+ POST /api/directions 200 in 2393ms
+ POST /api/directions 200 in 2406ms
+ POST /api/directions 200 in 54ms
+ POST /api/directions 200 in 60ms
+ POST /api/directions 200 in 68ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 66ms
+ POST /api/directions 200 in 80ms
+ POST /api/directions 200 in 49ms
+ POST /api/directions 200 in 59ms
+ POST /api/directions 200 in 68ms
+ POST /api/directions 200 in 71ms
+ POST /api/directions 200 in 61ms
+ POST /api/directions 200 in 66ms
+ POST /api/directions 200 in 46ms
+ POST /api/directions 200 in 48ms
+ POST /api/directions 200 in 49ms
+ POST /api/directions 200 in 56ms
+ POST /api/directions 200 in 60ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 42ms
+ POST /api/directions 200 in 43ms
+ POST /api/directions 200 in 54ms
+ POST /api/directions 200 in 61ms
+ POST /api/directions 200 in 34ms
+ POST /api/directions 200 in 45ms
+ ○ Compiling /api/ai-advisor ...
+ ✓ Compiled /api/ai-advisor in 673ms (2872 modules)
+ POST /api/ai-advisor 200 in 3606ms
