@@ -20,7 +20,7 @@ export function ScenarioSimulator() {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Scenario Simulator</CardTitle>
-        <CardDescription>"What If?" environment testing for automatic route re-optimization</CardDescription>
+        <CardDescription>&quot;What If?&quot; environment testing for automatic route re-optimization</CardDescription>
       </CardHeader>
       <CardContent className="grid sm:grid-cols-2 gap-4">
 

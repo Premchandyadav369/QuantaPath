@@ -290,7 +290,7 @@ export function BenchmarkDashboard() {
       {/* Key Metrics */}
       {metrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Quantum Advantage</CardTitle>
               <Award className="h-4 w-4 text-accent" />
@@ -301,7 +301,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
               <Target className="h-4 w-4 text-secondary" />
@@ -313,7 +313,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avg Runtime</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -326,7 +326,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Benchmarks</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -348,7 +348,7 @@ export function BenchmarkDashboard() {
         </TabsList>
 
         <TabsContent value="results" className="space-y-4">
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
@@ -411,7 +411,7 @@ export function BenchmarkDashboard() {
 
         <TabsContent value="performance" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
+            <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
               <CardHeader>
                 <CardTitle>Runtime vs Problem Size</CardTitle>
               </CardHeader>
@@ -449,7 +449,7 @@ export function BenchmarkDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
               <CardHeader>
                 <CardTitle>Solution Quality (Tour Length)</CardTitle>
               </CardHeader>
@@ -470,7 +470,7 @@ export function BenchmarkDashboard() {
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle>Performance Summary</CardTitle>
             </CardHeader>
@@ -531,7 +531,7 @@ export function BenchmarkDashboard() {
         </TabsContent>
 
         <TabsContent value="comparison" className="space-y-4">
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle>Algorithm Head-to-Head</CardTitle>
             </CardHeader>
@@ -589,7 +589,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle>Recommendations</CardTitle>
             </CardHeader>
