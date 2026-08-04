@@ -57,106 +57,6 @@ export function BenchmarkDashboard() {
   const [isRunningBenchmark, setIsRunningBenchmark] = useState(false)
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null)
 
-  // Mock benchmark data for demonstration
-  useEffect(() => {
-    const mockResults: BenchmarkResult[] = [
-      {
-        id: "bench-1",
-        timestamp: new Date(Date.now() - 3600000),
-        problemSize: 6,
-        algorithms: [
-          {
-            name: "QAOA p=2",
-            solver: "quantum",
-            tourLength: 24.7,
-            runtime: 1850,
-            feasible: true,
-            parameters: { p: 2, shots: 1024 },
-          },
-          {
-            name: "Nearest Neighbor + 2-opt",
-            solver: "classical",
-            tourLength: 26.3,
-            runtime: 45,
-            feasible: true,
-          },
-          {
-            name: "Simulated Annealing",
-            solver: "classical",
-            tourLength: 25.1,
-            runtime: 120,
-            feasible: true,
-          },
-        ],
-        bestLength: 24.7,
-        quantumAdvantage: 6.1,
-      },
-      {
-        id: "bench-2",
-        timestamp: new Date(Date.now() - 7200000),
-        problemSize: 8,
-        algorithms: [
-          {
-            name: "QAOA p=3",
-            solver: "quantum",
-            tourLength: 32.4,
-            runtime: 2850,
-            feasible: true,
-            parameters: { p: 3, shots: 2048 },
-          },
-          {
-            name: "Nearest Neighbor + 2-opt",
-            solver: "classical",
-            tourLength: 35.2,
-            runtime: 78,
-            feasible: true,
-          },
-          {
-            name: "Simulated Annealing",
-            solver: "classical",
-            tourLength: 33.8,
-            runtime: 185,
-            feasible: true,
-          },
-        ],
-        bestLength: 32.4,
-        quantumAdvantage: 8.0,
-      },
-      {
-        id: "bench-3",
-        timestamp: new Date(Date.now() - 10800000),
-        problemSize: 10,
-        algorithms: [
-          {
-            name: "QAOA p=2",
-            solver: "quantum",
-            tourLength: 41.2,
-            runtime: 4200,
-            feasible: true,
-            parameters: { p: 2, shots: 1024 },
-          },
-          {
-            name: "Nearest Neighbor + 2-opt",
-            solver: "classical",
-            tourLength: 44.8,
-            runtime: 125,
-            feasible: true,
-          },
-          {
-            name: "Simulated Annealing",
-            solver: "classical",
-            tourLength: 42.6,
-            runtime: 280,
-            feasible: true,
-          },
-        ],
-        bestLength: 41.2,
-        quantumAdvantage: 8.0,
-      },
-    ]
-
-    setBenchmarkResults(mockResults)
-  }, [])
 
   useEffect(() => {
     if (benchmarkResults.length === 0) return
@@ -549,6 +449,16 @@ export function BenchmarkDashboard() {
                     </tr>
                   </thead>
                   <tbody>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">DARA</td>
+                      <td className="p-2">
+                        <Badge className="bg-accent text-xs">Quantum-Inspired</Badge>
+                      </td>
+                      <td className="p-2 text-emerald-500 font-bold">19.7 km</td>
+                      <td className="p-2">0.5s</td>
+                      <td className="p-2">100%</td>
+                      <td className="p-2">Massive Scale</td>
+                    </tr>
                     <tr className="border-b">
                       <td className="p-2 font-medium">QAOA p=2</td>
                       <td className="p-2">

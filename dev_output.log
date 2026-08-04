@@ -7,9 +7,9 @@
    - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 1930ms
+ ✓ Ready in 1988ms
  ○ Compiling / ...
- ✓ Compiled / in 37.1s (4871 modules)
+ ✓ Compiled / in 30.8s (4871 modules)
 The width(-1) and height(-1) of chart should be greater than 0,
        please check the style of container, or the props width(100%) and height(100%),
        or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
@@ -26,53 +26,96 @@ The width(-1) and height(-1) of chart should be greater than 0,
        please check the style of container, or the props width(100%) and height(100%),
        or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
        height and width.
-The width(-1) and height(-1) of chart should be greater than 0,
-       please check the style of container, or the props width(100%) and height(100%),
-       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
-       height and width.
-The width(-1) and height(-1) of chart should be greater than 0,
-       please check the style of container, or the props width(100%) and height(100%),
-       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
-       height and width.
-The width(-1) and height(-1) of chart should be greater than 0,
-       please check the style of container, or the props width(100%) and height(100%),
-       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
-       height and width.
-The width(-1) and height(-1) of chart should be greater than 0,
-       please check the style of container, or the props width(100%) and height(100%),
-       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
-       height and width.
- GET / 200 in 759ms
+ GET / 200 in 33194ms
+ ○ Compiling /api/optimize ...
+ ✓ Compiled /api/optimize in 4.2s (4876 modules)
+ GET / 200 in 431ms
+ POST /api/optimize 200 in 6771ms
  ○ Compiling /api/directions ...
- ✓ Compiled /api/directions in 3.3s (4875 modules)
- POST /api/directions 200 in 3614ms
- POST /api/directions 200 in 3610ms
- POST /api/directions 200 in 3624ms
- POST /api/directions 200 in 3630ms
- POST /api/directions 200 in 3622ms
- POST /api/directions 200 in 3638ms
- GET / 200 in 243ms
+ ✓ Compiled /api/directions in 1060ms (4867 modules)
+ POST /api/directions 200 in 1261ms
+ POST /api/directions 200 in 669ms
+ POST /api/directions 200 in 1271ms
+ POST /api/directions 200 in 1276ms
+ POST /api/directions 200 in 684ms
+ POST /api/directions 200 in 1295ms
+ POST /api/directions 200 in 42ms
+ POST /api/directions 200 in 47ms
+ POST /api/directions 200 in 203ms
+ POST /api/directions 200 in 211ms
+ POST /api/directions 200 in 223ms
+ POST /api/directions 200 in 241ms
+ POST /api/directions 200 in 176ms
+ POST /api/directions 200 in 125ms
+ POST /api/directions 200 in 248ms
+ POST /api/directions 200 in 258ms
+ POST /api/directions 200 in 266ms
+ POST /api/directions 200 in 171ms
+ POST /api/directions 200 in 107ms
+ POST /api/directions 200 in 68ms
+ POST /api/directions 200 in 72ms
+ POST /api/directions 200 in 89ms
+ POST /api/directions 200 in 47ms
+ POST /api/directions 200 in 99ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 58ms
+ POST /api/directions 200 in 43ms
+ POST /api/directions 200 in 58ms
+ POST /api/directions 200 in 95ms
+ POST /api/directions 200 in 74ms
+ POST /api/directions 200 in 86ms
+ POST /api/directions 200 in 98ms
+ POST /api/directions 200 in 74ms
  POST /api/directions 200 in 85ms
  POST /api/directions 200 in 116ms
- POST /api/directions 200 in 123ms
- POST /api/directions 200 in 112ms
- POST /api/directions 200 in 157ms
- POST /api/directions 200 in 96ms
- POST /api/directions 200 in 150ms
- POST /api/directions 200 in 57ms
- POST /api/directions 200 in 61ms
- POST /api/directions 200 in 66ms
- POST /api/directions 200 in 71ms
- POST /api/directions 200 in 78ms
- POST /api/directions 200 in 59ms
- POST /api/directions 200 in 40ms
- POST /api/directions 200 in 84ms
+ POST /api/directions 200 in 133ms
+ POST /api/directions 200 in 141ms
+ POST /api/directions 200 in 125ms
+ POST /api/directions 200 in 34ms
+ POST /api/directions 200 in 95ms
+ POST /api/directions 200 in 196ms
+ POST /api/directions 200 in 111ms
+ POST /api/directions 200 in 118ms
+ POST /api/directions 200 in 130ms
+ POST /api/directions 200 in 55ms
+ POST /api/directions 200 in 68ms
+ POST /api/directions 200 in 63ms
+ POST /api/directions 200 in 68ms
  POST /api/directions 200 in 77ms
- POST /api/directions 200 in 25ms
- POST /api/directions 200 in 81ms
- POST /api/directions 200 in 85ms
- POST /api/directions 200 in 32ms
- POST /api/directions 200 in 33ms
- POST /api/directions 200 in 38ms
+ POST /api/directions 200 in 48ms
+ POST /api/directions 200 in 110ms
+ POST /api/directions 200 in 118ms
+ POST /api/directions 200 in 118ms
+ POST /api/directions 200 in 76ms
+ POST /api/directions 200 in 136ms
+ POST /api/directions 200 in 221ms
+ POST /api/directions 200 in 48ms
+ POST /api/directions 200 in 53ms
+ POST /api/directions 200 in 57ms
+ POST /api/directions 200 in 62ms
+ POST /api/directions 200 in 76ms
+ POST /api/directions 200 in 83ms
+ POST /api/directions 200 in 61ms
+ POST /api/directions 200 in 63ms
+ POST /api/directions 200 in 71ms
+ POST /api/directions 200 in 79ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 87ms
  POST /api/directions 200 in 29ms
  POST /api/directions 200 in 41ms
+ POST /api/directions 200 in 48ms
+ POST /api/directions 200 in 54ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 77ms
+ POST /api/directions 200 in 51ms
+ POST /api/directions 200 in 62ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 70ms
+ POST /api/directions 200 in 76ms
+ POST /api/directions 200 in 87ms
+ POST /api/directions 200 in 26ms
+ POST /api/directions 200 in 33ms
+ POST /api/directions 200 in 45ms
+ POST /api/directions 200 in 27ms
+ ELIFECYCLE  Command failed.
+[?25h

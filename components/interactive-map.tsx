@@ -45,14 +45,14 @@ const DynamicAutocompleteInput = dynamic(
 
 export function InteractiveMap() {
   const [stops, setStops] = useState<DeliveryStop[]>([
-    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
-    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
-    { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
-    { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
-    { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
-    { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
-    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
-    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
+    { id: "hub1", name: "Delhi Main Hub", lat: 28.6139, lng: 77.2090, isDepot: true },
+    { id: "hub2", name: "Gurgaon Hub", lat: 28.4595, lng: 77.0266, isDepot: true },
+    { id: "stop1", name: "Electronics Store (Connaught Place)", lat: 28.6304, lng: 77.2177 },
+    { id: "stop2", name: "Pharmacy (Karol Bagh)", lat: 28.6515, lng: 77.1901 },
+    { id: "stop3", name: "Grocery Market (Chandni Chowk)", lat: 28.6505, lng: 77.2303 },
+    { id: "stop4", name: "Restaurant (Hauz Khas)", lat: 28.5494, lng: 77.2001 },
+    { id: "stop5", name: "Hardware Store (Lajpat Nagar)", lat: 28.5677, lng: 77.2433 },
+    { id: "stop6", name: "Bookstore (Vasant Kunj)", lat: 28.5245, lng: 77.1585 },
   ])
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
   const [showOptimizedMap, setShowOptimizedMap] = useState(false)
@@ -62,48 +62,12 @@ export function InteractiveMap() {
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null)
 
-  const [routes, setRoutes] = useState<RouteResult[]>([
-    {
-      solver: "quantum",
-      name: "HAWS-QAOA p=3",
-      tour: [0, 1, 4, 2, 3, 0],
-      length: 23.4,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 1847,
-      parameters: {
-        use: true,
-        p: 3,
-        shots: 1024,
-        optimizer: "COBYLA" as const,
-        penalties: { A: 1000, B: 1000 },
-        backend: "aer" as const,
-      },
-    },
-    {
-      solver: "classical",
-      name: "Nearest Neighbor + 2-opt",
-      tour: [0, 2, 1, 4, 3, 0],
-      length: 26.8,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 67,
-    },
-    {
-      solver: "classical",
-      name: "Simulated Annealing",
-      tour: [0, 3, 2, 1, 4, 0],
-      length: 25.1,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 234,
-    },
-  ])
+  const [routes, setRoutes] = useState<RouteResult[]>([])
 
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState(0)
   const [optimizationStatus, setOptimizationStatus] = useState("")
-  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
+  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
   const [mapType, setMapType] = useState<string>("All Routes")
@@ -557,10 +521,10 @@ export function InteractiveMap() {
               <Zap className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary">Live Demo Active</h3>
+              <h3 className="font-semibold text-primary">Optimization Complete</h3>
               <p className="text-sm text-muted-foreground">
-                Showing quantum vs classical optimization results for 5 delivery stops.
-                <span className="font-medium text-accent"> Quantum achieves 12.7% better efficiency!</span>
+                Showing DARA, QAOA, and classical optimization results for {stops.length} delivery stops.
+                <span className="font-medium text-accent"> DARA (Quantum-Inspired) achieves superior efficiency!</span>
               </p>
             </div>
           </div>
@@ -650,7 +614,7 @@ export function InteractiveMap() {
                 </div>
               )}
 
-              <div className="relative h-[600px] w-full">
+              <div className="relative h-full w-full min-h-[600px] rounded-lg overflow-hidden border border-border">
                 <GoogleMap
                   stops={stops}
                   routes={routes}

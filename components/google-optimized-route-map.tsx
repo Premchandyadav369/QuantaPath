@@ -117,11 +117,12 @@ export function GoogleOptimizedRouteMap({
 }: GoogleOptimizedRouteMapProps) {
   const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
 
-  const position = { lat: 16.5062, lng: 80.648 }
+  const position = { lat: 28.6139, lng: 77.2090 } // Delhi, India
 
   return (
     <APIProvider apiKey={apiKey} libraries={["places"]}>
       <Map
+        style={{ width: '100%', height: '100%' }}
         defaultCenter={position}
         defaultZoom={12}
         mapId="a3b4c5d6e7f8g9h0"

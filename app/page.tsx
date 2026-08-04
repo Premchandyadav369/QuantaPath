@@ -37,6 +37,9 @@ export default function HomePage() {
               <Button variant="ghost" size="sm">
                 Benchmarks
               </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="/research">Research (DARA)</a>
+              </Button>
               <Button variant="ghost" size="sm">
                 GitHub
               </Button>
@@ -76,7 +79,7 @@ export default function HomePage() {
           </div>
 
           {/* Interactive Route Optimization Demo */}
-          <div className="mt-16 max-w-6xl mx-auto">
+          <div className="mt-16 w-full max-w-[1600px] mx-auto min-h-[800px]">
             <InteractiveMap />
           </div>
         </div>

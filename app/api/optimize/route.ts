@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { DistanceService } from "@/lib/services/distance-service"
 import { QuantumService } from "@/lib/services/quantum-service"
 import { ClassicalService } from "@/lib/services/classical-service"
+import { DaraService } from "@/lib/services/dara-service"
 import type { OptimizationRequest, OptimizationResponse, RouteResult } from "@/lib/types"
 
 export async function POST(request: NextRequest) {
@@ -78,6 +79,12 @@ export async function POST(request: NextRequest) {
       const classicalService = ClassicalService.getInstance()
       const classicalResults = await classicalService.solveClassical(groupMatrix, classical)
       candidates.push(...classicalResults.map((r) => ({ ...r, hubId })))
+
+      if (quantum.use) {
+          const daraService = DaraService.getInstance()
+          const daraResult = await daraService.solveDARA(groupMatrix)
+          candidates.push({ ...daraResult, hubId })
+      }
 
       allCandidates.push(...candidates)
     }
