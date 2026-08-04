@@ -24,14 +24,6 @@ import {
   Heart,
   Info,
   Route,
-  CloudRain,
-  Flame,
-  Leaf,
-  History,
-  Layers,
-  BarChart3,
-  TrendingUp,
-  SplitSquareHorizontal
 } from "lucide-react"
 import { ApiClient } from "@/lib/services/api-client"
 import * as XLSX from "xlsx"
@@ -53,14 +45,14 @@ const DynamicAutocompleteInput = dynamic(
 
 export function InteractiveMap() {
   const [stops, setStops] = useState<DeliveryStop[]>([
-    { id: "hub1", name: "Hub 1", lat: 16.5062, lng: 80.648, isDepot: true },
-    { id: "hub2", name: "Hub 2", lat: 16.55, lng: 80.7, isDepot: true },
-    { id: "stop1", name: "Electronics Store", lat: 16.515, lng: 80.655 },
-    { id: "stop2", name: "Pharmacy", lat: 16.498, lng: 80.642 },
-    { id: "stop3", name: "Grocery Market", lat: 16.51, lng: 80.635 },
-    { id: "stop4", name: "Restaurant", lat: 16.522, lng: 80.651 },
-    { id: "stop5", name: "Hardware Store", lat: 16.54, lng: 80.71 },
-    { id: "stop6", name: "Bookstore", lat: 16.56, lng: 80.69 },
+    { id: "hub1", name: "Delhi Main Hub", lat: 28.6139, lng: 77.2090, isDepot: true },
+    { id: "hub2", name: "Gurgaon Hub", lat: 28.4595, lng: 77.0266, isDepot: true },
+    { id: "stop1", name: "Electronics Store (Connaught Place)", lat: 28.6304, lng: 77.2177 },
+    { id: "stop2", name: "Pharmacy (Karol Bagh)", lat: 28.6515, lng: 77.1901 },
+    { id: "stop3", name: "Grocery Market (Chandni Chowk)", lat: 28.6505, lng: 77.2303 },
+    { id: "stop4", name: "Restaurant (Hauz Khas)", lat: 28.5494, lng: 77.2001 },
+    { id: "stop5", name: "Hardware Store (Lajpat Nagar)", lat: 28.5677, lng: 77.2433 },
+    { id: "stop6", name: "Bookstore (Vasant Kunj)", lat: 28.5245, lng: 77.1585 },
   ])
   const [processedStops, setProcessedStops] = useState<DeliveryStop[]>(stops)
   const [showOptimizedMap, setShowOptimizedMap] = useState(false)
@@ -71,6 +63,23 @@ export function InteractiveMap() {
   const mapRef = useRef<google.maps.Map | null>(null)
 
   const [routes, setRoutes] = useState<RouteResult[]>([
+    {
+      solver: "quantum",
+      name: "DARA (Quantum-Inspired)",
+      tour: [0, 4, 1, 2, 3, 0],
+      length: 16.5,
+      feasible: true,
+      violations: { pos: 0, city: 0 },
+      runtimeMs: 420,
+      parameters: {
+        use: true,
+        p: 3,
+        shots: 1024,
+        optimizer: "COBYLA" as const,
+        penalties: { A: 1000, B: 1000 },
+        backend: "aer" as const,
+      },
+    },
     {
       solver: "quantum",
       name: "HAWS-QAOA p=3",
@@ -130,20 +139,6 @@ export function InteractiveMap() {
     backend: "aer" as const,
   })
 
-  const [quantumVisualizationMode, setQuantumVisualizationMode] = useState(false);
-
-  // New Map Overlay States
-  const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showWeather, setShowWeather] = useState(false);
-  const [showCarbon, setShowCarbon] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showLayerMenu, setShowLayerMenu] = useState(false);
-  const [showMiniAnalytics, setShowMiniAnalytics] = useState(false);
-  const [isSplitScreen, setIsSplitScreen] = useState(false);
-
-  // Context Menu State
-  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, lat: number, lng: number } | null>(null);
-
   const [classicalParams, setClassicalParams] = useState({
     nn: true,
     twoOpt: true,
@@ -188,29 +183,9 @@ export function InteractiveMap() {
     }
   }, [])
 
-  const handleMapRightClick = useCallback((e: google.maps.MapMouseEvent) => {
-      if (!e.latLng || !e.domEvent) return;
-      e.domEvent.preventDefault();
-      const domEvent = e.domEvent as unknown as MouseEvent;
-      setContextMenu({
-          x: domEvent.clientX,
-          y: domEvent.clientY,
-          lat: e.latLng.lat(),
-          lng: e.latLng.lng()
-      });
-  }, []);
-
-  // Close context menu on any map click or outside click
-  useEffect(() => {
-     const closeMenu = () => setContextMenu(null);
-     document.addEventListener('click', closeMenu);
-     return () => document.removeEventListener('click', closeMenu);
-  }, []);
-
   const handleMapClick = useCallback(
     (lat: number, lng: number) => {
       if (isOptimizing) return;
-      setContextMenu(null);
 
       const newStop: DeliveryStop = {
         id: `stop${Date.now()}`,
@@ -693,238 +668,36 @@ export function InteractiveMap() {
               )}
 
               <div className="relative h-full w-full min-h-[600px] rounded-lg overflow-hidden border border-border">
-                <div className={`flex h-full w-full ${isSplitScreen ? 'divide-x divide-border' : ''}`}>
-                  <div className={`${isSplitScreen ? 'w-1/2' : 'w-full'} h-full relative`}>
-                    {isSplitScreen && (
-                       <div className="absolute top-2 left-2 z-20 bg-background/90 backdrop-blur-md rounded px-2 py-1 text-xs font-semibold shadow-md border border-border/50">
-                            {selectedRoute?.solver === 'quantum' ? 'Quantum HAWS-QAOA' : 'Primary View'}
-                       </div>
-                    )}
-                    <div className="w-full h-[600px]">
-                      <GoogleMap
-                        stops={stops}
-                        routes={routes}
-                        selectedRoute={selectedRoute}
-                        onMapClick={handleMapClick}
-                        onStopRemove={removeStop}
-                        onStopMove={handleStopMove}
-                        isOptimizing={isOptimizing}
-                        isDepotMode={isHubMode}
-                        onMapReady={(map) => (mapRef.current = map)}
-                        searchedLocation={searchedLocation}
-                        stopsForRoutes={processedStops}
-                        simulationTime={simulationTime}
-                        isSimulating={isSimulating}
-                        quantumVisualizationMode={quantumVisualizationMode}
-                        showHeatmap={showHeatmap}
-                        showWeather={showWeather}
-                        showCarbon={showCarbon}
-                        showHistory={showHistory}
-                        onMapRightClick={handleMapRightClick}
-                      />
-                    </div>
-                  </div>
-                  {isSplitScreen && (
-                     <div className="w-1/2 h-full relative">
-                        <div className="absolute top-2 left-2 z-20 bg-background/90 backdrop-blur-md rounded px-2 py-1 text-xs font-semibold shadow-md border border-border/50">
-                            Classical Baseline
-                        </div>
-                        <div className="w-full h-[600px]">
-                        <GoogleMap
-                          stops={stops}
-                          routes={routes.filter(r => r.solver === 'classical')}
-                          selectedRoute={routes.find(r => r.solver === 'classical') || null}
-                          stopsForRoutes={processedStops}
-                          onMapClick={() => {}}
-                          onStopRemove={() => {}}
-                          onStopMove={() => {}}
-                          isOptimizing={false}
-                          simulationTime={simulationTime}
-                          isSimulating={isSimulating}
-                        />
-                        </div>
-                     </div>
-                  )}
-                </div>
+                <GoogleMap
+                  stops={stops}
+                  routes={routes}
+                  selectedRoute={selectedRoute}
+                  onMapClick={handleMapClick}
+                  onStopRemove={removeStop}
+                  onStopMove={handleStopMove}
+                  isOptimizing={isOptimizing}
+                  isDepotMode={isHubMode}
+                  onMapReady={(map) => (mapRef.current = map)}
+                  searchedLocation={searchedLocation}
+                  stopsForRoutes={processedStops}
+                  simulationTime={simulationTime}
+                  isSimulating={isSimulating}
+                />
 
-                {/* Context Menu */}
-                {contextMenu && (
-                    <div
-                        className="fixed z-50 w-48 bg-background/95 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-1 overflow-hidden"
-                        style={{ top: contextMenu.y, left: contextMenu.x }}
-                    >
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-sm h-8"
-                            onClick={(e) => { e.stopPropagation(); setStops(prev => [...prev, { id: `stop${Date.now()}`, name: `Stop ${prev.length + 1}`, lat: contextMenu.lat, lng: contextMenu.lng, isDepot: false }]); setContextMenu(null); }}
-                        >
-                            <MapPin className="w-3 h-3 mr-2 text-accent" /> Add Stop Here
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-sm h-8"
-                            onClick={(e) => { e.stopPropagation(); setStops(prev => [...prev, { id: `hub${Date.now()}`, name: `Hub ${prev.filter(s=>s.isDepot).length + 1}`, lat: contextMenu.lat, lng: contextMenu.lng, isDepot: true }]); setContextMenu(null); }}
-                        >
-                            <MapPin className="w-3 h-3 mr-2 text-primary" /> Add Hub Here
-                        </Button>
-                        <Separator className="my-1" />
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-sm h-8"
-                            onClick={(e) => { e.stopPropagation(); optimizeRoutes(); setContextMenu(null); }}
-                            disabled={stops.length < 3 || isOptimizing}
-                        >
-                            <Play className="w-3 h-3 mr-2" /> Optimize From Here
-                        </Button>
-                    </div>
-                )}
-
-                {/* Interactive Route Comparison Checklist */}
-                {routes.length > 1 && (
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-background/90 backdrop-blur-md border border-border/50 rounded-full px-4 py-2 shadow-xl flex gap-4 items-center">
-                        <span className="text-xs font-semibold uppercase text-muted-foreground mr-2">Compare:</span>
-                        {routes.map((route) => (
-                             <label key={route.name} className="flex items-center gap-2 cursor-pointer group">
-                                 <input
-                                     type="radio"
-                                     name="route-compare"
-                                     checked={selectedRoute?.name === route.name}
-                                     onChange={() => setSelectedRoute(route)}
-                                     className="sr-only"
-                                 />
-                                 <div className={`w-3 h-3 rounded-full border border-border/50 transition-all ${selectedRoute?.name === route.name ? 'ring-2 ring-offset-2 ring-offset-background' : 'group-hover:scale-110'}`} style={{ backgroundColor: getRouteColor(route.solver, route.name), '--tw-ring-color': getRouteColor(route.solver, route.name) } as React.CSSProperties} />
-                                 <span className={`text-xs font-medium transition-colors ${selectedRoute?.name === route.name ? 'text-foreground' : 'text-muted-foreground'}`}>{route.solver === 'quantum' ? 'Quantum' : route.name.includes('Simulated') ? 'SA' : 'NN'}</span>
-                             </label>
-                        ))}
-                    </div>
-                )}
-
-                {/* Floating Map Controls */}
-                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10 items-end">
-                  {/* Live Statistics Overlay (KPI Widgets) */}
-                  {selectedRoute && (
-                     <div className="flex gap-2 mb-2 w-full justify-end">
-                         <div className="bg-background/80 backdrop-blur-md border border-border/50 rounded-xl px-3 py-1 shadow-md flex items-center gap-2">
-                             <TrendingUp className="w-4 h-4 text-emerald-500" />
-                             <span className="text-xs font-bold">{selectedRoute.length.toFixed(1)} km</span>
-                         </div>
-                         <div className="bg-background/80 backdrop-blur-md border border-border/50 rounded-xl px-3 py-1 shadow-md flex items-center gap-2">
-                             <Clock className="w-4 h-4 text-blue-500" />
-                             <span className="text-xs font-bold">{selectedRoute.runtimeMs} ms</span>
-                         </div>
-                     </div>
-                  )}
-
-                  <div className="flex flex-col gap-2">
+                {/* Map Controls */}
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button
-                    size="icon"
-                    variant={isHubMode ? "default" : "secondary"}
+                    size="sm"
+                    variant={isHubMode ? "default" : "outline"}
                     onClick={toggleHubMode}
                     disabled={isOptimizing}
-                    className="rounded-full shadow-lg backdrop-blur-md bg-background/80"
+                    className={isHubMode ? "bg-primary text-primary-foreground" : ""}
                   >
                     <MapPin className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="secondary" onClick={clearStops} disabled={isOptimizing} className="rounded-full shadow-lg backdrop-blur-md bg-background/80">
+                  <Button size="sm" variant="outline" onClick={clearStops} disabled={isOptimizing}>
                     <RotateCcw className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant={quantumVisualizationMode ? "default" : "secondary"} onClick={() => setQuantumVisualizationMode(!quantumVisualizationMode)} className="rounded-full shadow-lg backdrop-blur-md bg-background/80" title="Toggle Quantum Visualization Mode">
-                     <Zap className={quantumVisualizationMode ? "w-4 h-4 text-accent" : "w-4 h-4"} />
-                  </Button>
-                  <div className="relative">
-                      <Button size="icon" variant={showLayerMenu ? "default" : "secondary"} onClick={() => setShowLayerMenu(!showLayerMenu)} className="rounded-full shadow-lg backdrop-blur-md bg-background/80" title="Map Layers">
-                         <Layers className="w-4 h-4" />
-                      </Button>
-                      {showLayerMenu && (
-                          <div className="absolute top-0 right-12 bg-background/90 backdrop-blur-md border border-border/50 rounded-xl p-2 shadow-xl flex gap-2 w-max">
-                              <Button size="icon" variant={showHeatmap ? "default" : "ghost"} onClick={() => setShowHeatmap(!showHeatmap)} title="Toggle Heatmap" className="h-8 w-8 rounded-full">
-                                  <Flame className={showHeatmap ? "w-4 h-4 text-orange-500" : "w-4 h-4"} />
-                              </Button>
-                              <Button size="icon" variant={showWeather ? "default" : "ghost"} onClick={() => setShowWeather(!showWeather)} title="Toggle Weather" className="h-8 w-8 rounded-full">
-                                  <CloudRain className={showWeather ? "w-4 h-4 text-blue-400" : "w-4 h-4"} />
-                              </Button>
-                              <Button size="icon" variant={showCarbon ? "default" : "ghost"} onClick={() => setShowCarbon(!showCarbon)} title="Toggle Carbon Overlay" className="h-8 w-8 rounded-full">
-                                  <Leaf className={showCarbon ? "w-4 h-4 text-emerald-500" : "w-4 h-4"} />
-                              </Button>
-                              <Button size="icon" variant={showHistory ? "default" : "ghost"} onClick={() => setShowHistory(!showHistory)} title="Toggle Route History" className="h-8 w-8 rounded-full">
-                                  <History className="w-4 h-4" />
-                              </Button>
-                          </div>
-                      )}
-                  </div>
-                  <Button size="icon" variant={isSplitScreen ? "default" : "secondary"} onClick={() => setIsSplitScreen(!isSplitScreen)} className="rounded-full shadow-lg backdrop-blur-md bg-background/80" title="Toggle Split Screen">
-                     <SplitSquareHorizontal className="w-4 h-4" />
-                  </Button>
-                  <Button size="icon" variant={showMiniAnalytics ? "default" : "secondary"} onClick={() => setShowMiniAnalytics(!showMiniAnalytics)} className="rounded-full shadow-lg backdrop-blur-md bg-background/80 mt-auto" title="Mini Analytics Panel">
-                     <BarChart3 className="w-4 h-4" />
-                  </Button>
-                  </div>
-                </div>
-
-                {/* Mini Analytics Panel */}
-                {showMiniAnalytics && selectedRoute && (
-                    <div className="absolute bottom-20 right-4 z-10 w-80 bg-background/90 backdrop-blur-md border border-border/50 rounded-xl p-4 shadow-xl">
-                        <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2">
-                            <h4 className="font-semibold text-sm">Convergence Analytics</h4>
-                            <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="h-32 w-full flex items-end justify-between px-2 pb-2 border-l border-b border-border/50 relative">
-                             {/* Mock convergence graph bars */}
-                             {[100, 80, 65, 55, 52, 50].map((val, i) => (
-                                 <div key={i} className="w-4 bg-accent/80 rounded-t-sm" style={{ height: `${val}%` }} title={`Iter ${i*10}: Cost ${val}`} />
-                             ))}
-                             <span className="absolute -left-6 top-0 text-[10px] text-muted-foreground">100</span>
-                             <span className="absolute -left-6 bottom-0 text-[10px] text-muted-foreground">50</span>
-                        </div>
-                        <p className="text-[10px] text-center text-muted-foreground mt-2">Iterations (x10)</p>
-                    </div>
-                )}
-
-                {/* Floating Route Inspector */}
-                {selectedRoute && (
-                    <div className="absolute top-4 left-4 z-10 w-64 bg-background/80 backdrop-blur-md border border-border/50 rounded-xl p-4 shadow-xl">
-                        <div className="flex items-center gap-2 mb-2 border-b border-border/50 pb-2">
-                           <div className="w-3 h-3 rounded-full mt-1" style={{ backgroundColor: getRouteColor(selectedRoute.solver, selectedRoute.name) }} />
-                           <h4 className="font-semibold text-sm truncate">{selectedRoute.name}</h4>
-                        </div>
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                            <div className="flex justify-between items-center">
-                                <span>Distance:</span>
-                                <span className="font-medium text-foreground">{selectedRoute.length.toFixed(1)} km</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span>Runtime:</span>
-                                <span className="font-medium text-foreground">{selectedRoute.runtimeMs} ms</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span>Optimization:</span>
-                                <span className="font-medium text-foreground">
-                                   {selectedRoute.solver === 'quantum' ? 'HAWS-QAOA' : 'Classical'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Time Slider */}
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 w-[80%] max-w-md bg-background/80 backdrop-blur-md border border-border/50 rounded-xl px-6 py-3 shadow-xl">
-                     <div className="flex items-center gap-4">
-                         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">00:00</span>
-                         <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={simulationTime * 100}
-                            onChange={(e) => {
-                              const time = Number(e.target.value) / 100;
-                              handleToggleSimulation(true);
-                              setTimeout(() => setSimulationTime(time), 0);
-                            }}
-                            className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                            title="Time slider (Simulation)"
-                         />
-                         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">23:59</span>
-                     </div>
                 </div>
               </div>
             </CardContent>

@@ -106,7 +106,6 @@ function RoutePolylines({ routes, stops }: { routes: RouteResult[]; stops: Deliv
     return () => {
       polylines.forEach((p) => p.setMap(null))
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, routes, stops])
 
   return null
@@ -118,7 +117,7 @@ export function GoogleOptimizedRouteMap({
 }: GoogleOptimizedRouteMapProps) {
   const apiKey = "AIzaSyCU4fXg2nd8GS4TISLrRAnES3_6ZQ01a9U"
 
-  const position = { lat: 16.5062, lng: 80.648 }
+  const position = { lat: 28.6139, lng: 77.2090 } // Delhi, India
 
   return (
     <APIProvider apiKey={apiKey} libraries={["places"]}>

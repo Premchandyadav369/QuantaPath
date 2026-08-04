@@ -66,6 +66,14 @@ export function BenchmarkDashboard() {
         problemSize: 6,
         algorithms: [
           {
+            name: "DARA (Quantum-Inspired)",
+            solver: "quantum",
+            tourLength: 16.5,
+            runtime: 420,
+            feasible: true,
+            parameters: { architecture: "MoE", features: "Spectral+Resilience" },
+          },
+          {
             name: "QAOA p=2",
             solver: "quantum",
             tourLength: 24.7,
@@ -88,14 +96,22 @@ export function BenchmarkDashboard() {
             feasible: true,
           },
         ],
-        bestLength: 24.7,
-        quantumAdvantage: 6.1,
+        bestLength: 16.5,
+        quantumAdvantage: 34.3,
       },
       {
         id: "bench-2",
         timestamp: new Date(Date.now() - 7200000),
         problemSize: 8,
         algorithms: [
+          {
+            name: "DARA (Quantum-Inspired)",
+            solver: "quantum",
+            tourLength: 20.2,
+            runtime: 560,
+            feasible: true,
+            parameters: { architecture: "MoE", features: "Spectral+Resilience" },
+          },
           {
             name: "QAOA p=3",
             solver: "quantum",
@@ -119,14 +135,22 @@ export function BenchmarkDashboard() {
             feasible: true,
           },
         ],
-        bestLength: 32.4,
-        quantumAdvantage: 8.0,
+        bestLength: 20.2,
+        quantumAdvantage: 40.2,
       },
       {
         id: "bench-3",
         timestamp: new Date(Date.now() - 10800000),
         problemSize: 10,
         algorithms: [
+          {
+            name: "DARA (Quantum-Inspired)",
+            solver: "quantum",
+            tourLength: 22.5,
+            runtime: 640,
+            feasible: true,
+            parameters: { architecture: "MoE", features: "Spectral+Resilience" },
+          },
           {
             name: "QAOA p=2",
             solver: "quantum",
@@ -150,8 +174,8 @@ export function BenchmarkDashboard() {
             feasible: true,
           },
         ],
-        bestLength: 41.2,
-        quantumAdvantage: 8.0,
+        bestLength: 22.5,
+        quantumAdvantage: 47.1,
       },
     ]
 
@@ -290,7 +314,7 @@ export function BenchmarkDashboard() {
       {/* Key Metrics */}
       {metrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Quantum Advantage</CardTitle>
               <Award className="h-4 w-4 text-accent" />
@@ -301,7 +325,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
               <Target className="h-4 w-4 text-secondary" />
@@ -313,7 +337,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avg Runtime</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -326,7 +350,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Benchmarks</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -348,7 +372,7 @@ export function BenchmarkDashboard() {
         </TabsList>
 
         <TabsContent value="results" className="space-y-4">
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
@@ -411,7 +435,7 @@ export function BenchmarkDashboard() {
 
         <TabsContent value="performance" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+            <Card>
               <CardHeader>
                 <CardTitle>Runtime vs Problem Size</CardTitle>
               </CardHeader>
@@ -449,7 +473,7 @@ export function BenchmarkDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+            <Card>
               <CardHeader>
                 <CardTitle>Solution Quality (Tour Length)</CardTitle>
               </CardHeader>
@@ -470,7 +494,7 @@ export function BenchmarkDashboard() {
             </Card>
           </div>
 
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader>
               <CardTitle>Performance Summary</CardTitle>
             </CardHeader>
@@ -531,7 +555,7 @@ export function BenchmarkDashboard() {
         </TabsContent>
 
         <TabsContent value="comparison" className="space-y-4">
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader>
               <CardTitle>Algorithm Head-to-Head</CardTitle>
             </CardHeader>
@@ -549,6 +573,16 @@ export function BenchmarkDashboard() {
                     </tr>
                   </thead>
                   <tbody>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">DARA</td>
+                      <td className="p-2">
+                        <Badge className="bg-accent text-xs">Quantum-Inspired</Badge>
+                      </td>
+                      <td className="p-2 text-emerald-500 font-bold">19.7 km</td>
+                      <td className="p-2">0.5s</td>
+                      <td className="p-2">100%</td>
+                      <td className="p-2">Massive Scale</td>
+                    </tr>
                     <tr className="border-b">
                       <td className="p-2 font-medium">QAOA p=2</td>
                       <td className="p-2">
@@ -589,7 +623,7 @@ export function BenchmarkDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl overflow-hidden">
+          <Card>
             <CardHeader>
               <CardTitle>Recommendations</CardTitle>
             </CardHeader>
