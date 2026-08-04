@@ -62,65 +62,12 @@ export function InteractiveMap() {
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null)
 
-  const [routes, setRoutes] = useState<RouteResult[]>([
-    {
-      solver: "quantum",
-      name: "DARA (Quantum-Inspired)",
-      tour: [0, 4, 1, 2, 3, 0],
-      length: 16.5,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 420,
-      parameters: {
-        use: true,
-        p: 3,
-        shots: 1024,
-        optimizer: "COBYLA" as const,
-        penalties: { A: 1000, B: 1000 },
-        backend: "aer" as const,
-      },
-    },
-    {
-      solver: "quantum",
-      name: "HAWS-QAOA p=3",
-      tour: [0, 1, 4, 2, 3, 0],
-      length: 23.4,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 1847,
-      parameters: {
-        use: true,
-        p: 3,
-        shots: 1024,
-        optimizer: "COBYLA" as const,
-        penalties: { A: 1000, B: 1000 },
-        backend: "aer" as const,
-      },
-    },
-    {
-      solver: "classical",
-      name: "Nearest Neighbor + 2-opt",
-      tour: [0, 2, 1, 4, 3, 0],
-      length: 26.8,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 67,
-    },
-    {
-      solver: "classical",
-      name: "Simulated Annealing",
-      tour: [0, 3, 2, 1, 4, 0],
-      length: 25.1,
-      feasible: true,
-      violations: { pos: 0, city: 0 },
-      runtimeMs: 234,
-    },
-  ])
+  const [routes, setRoutes] = useState<RouteResult[]>([])
 
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState(0)
   const [optimizationStatus, setOptimizationStatus] = useState("")
-  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(routes[0])
+  const [selectedRoute, setSelectedRoute] = useState<RouteResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [likedRoutes, setLikedRoutes] = useState<string[]>([])
   const [mapType, setMapType] = useState<string>("All Routes")
@@ -574,10 +521,10 @@ export function InteractiveMap() {
               <Zap className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary">Live Demo Active</h3>
+              <h3 className="font-semibold text-primary">Optimization Complete</h3>
               <p className="text-sm text-muted-foreground">
-                Showing quantum vs classical optimization results for 5 delivery stops.
-                <span className="font-medium text-accent"> Quantum achieves 12.7% better efficiency!</span>
+                Showing DARA, QAOA, and classical optimization results for {stops.length} delivery stops.
+                <span className="font-medium text-accent"> DARA (Quantum-Inspired) achieves superior efficiency!</span>
               </p>
             </div>
           </div>

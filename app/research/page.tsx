@@ -1,8 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Route, BookOpen, GitBranch, ArrowLeft } from "lucide-react"
+import { Route, BookOpen, GitBranch, ArrowLeft, Layers, Workflow, Zap } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -22,7 +22,7 @@ export default function ResearchPage() {
               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                 <Route className="w-5 h-5 text-accent-foreground" />
               </div>
-              <span className="text-xl font-bold">QuantaPath Research</span>
+              <span className="text-xl font-bold">QuantaPath Platform & Research</span>
             </div>
           </div>
         </div>
@@ -33,12 +33,13 @@ export default function ResearchPage() {
         <div className="max-w-4xl mx-auto space-y-6">
           <Badge variant="secondary" className="mb-2">
             <BookOpen className="w-4 h-4 mr-1" />
-            Original Research
+            System Architecture & Original Research
           </Badge>
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            DARA: Dynamic Adaptive Resilience Analysis for Critical Node Identification in Large-Scale Transportation Networks
+            QuantaPath: The Quantum-Inspired Logistics Command Center
           </h1>
           <div className="text-muted-foreground space-y-2 border-l-4 border-accent pl-4">
+             <p className="font-semibold text-foreground">Powered by DARA (Dynamic Adaptive Resilience Analysis)</p>
             <p className="font-semibold">Suresh Dara*, V C Premchand Yadav†</p>
             <p className="text-sm">*School of Computer Science and Engineering (SCOPE), VIT-AP University, Amaravati, India</p>
             <p className="text-sm">†School of Computer Science and Engineering (SCOPE), VIT-AP University, Amaravati, India</p>
@@ -47,27 +48,68 @@ export default function ResearchPage() {
       </section>
 
       <section className="px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto space-y-12">
-          {/* Abstract */}
-          <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl">
-            <CardHeader>
-              <CardTitle>Abstract</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-muted-foreground leading-relaxed">
-              <p>
-                Road networks are critical infrastructure, yet the algorithms most widely used to rank junction criticality — degree, betweenness, closeness, PageRank, eigenvector and kcore centrality — are damage-agnostic, fixed-form, and blind to higher-order spectral effects.
-              </p>
-              <p>
-                We introduce <strong>DARA (Dynamic Adaptive Resilience Analysis)</strong>, a self-supervised, graphconditioned Mixture-of-Experts (MoE) framework that fuses classical centralities, quantum-walk-inspired spectral descriptors, and purpose-built structural resilience features into a single learned criticality score.
-              </p>
-              <p>
-                DARA supervises itself through Monte Carlo node-removal damage simulation and is trained with a composite objective blending a differentiable pairwise ranking surrogate with an exact validation criterion (Spearman, NDCG@10, top-K overlap, cross-dataset transfer).
-              </p>
-              <p>
-                On three SNAP road networks — roadNet-CA (1.96M nodes), roadNet-TX (1.35M nodes), and roadNet-PA (1.09M nodes) — DARA improves Spearman rank correlation with ground-truth structural damage by 45.2%, 36.3%, and 53.4% over the strongest classical baseline (PageRank), with Friedman statistics exceeding 1,700 (p &lt; 10−6) on every dataset. Cross-dataset transfer averages Spearman ρ = 0.444 zero-shot, and ablations show the learned fusion mechanism — not any single feature group — drives the majority of the gain.
-              </p>
-            </CardContent>
-          </Card>
+        <div className="max-w-4xl mx-auto space-y-16">
+
+          {/* System Architecture */}
+          <div className="space-y-6">
+             <h2 className="text-3xl font-bold flex items-center gap-2 border-b border-border/50 pb-2">
+              <Layers className="text-accent w-8 h-8" />
+              System Architecture
+            </h2>
+            <div className="prose prose-invert max-w-none text-muted-foreground">
+               <p>QuantaPath is built as a highly responsive, modern <strong>Next.js App Router</strong> application. The frontend acts as a unified &quot;AppShell,&quot; discarding traditional fragmented multi-page designs in favor of a <strong>Map-Centric Command Center</strong>. This design ethos treats the interactive map (powered by <code className="bg-muted px-1 rounded">@vis.gl/react-google-maps</code>) as the hero component, overlaying all tools, inspectors, and analytics as glassmorphic floating widgets.</p>
+               <p>Key architectural choices include:</p>
+               <ul>
+                   <li><strong>State Management:</strong> Complex route geometries, algorithmic parameters, and UI states (Heatmaps, Weather Overlays, Split-Screen modes) are managed via a unified React state layer, ensuring instant visual feedback without page reloads.</li>
+                   <li><strong>API Layer:</strong> Serverless Next.js API routes (`/api/optimize`, `/api/directions`) act as the backend logic, interfacing with distance matrix services (OpenRouteService/Google) and the core optimization algorithms.</li>
+                   <li><strong>Visualizations:</strong> Custom React components drive <strong>Animated Vehicle Playback</strong> using SVG math on the map canvas, while high-performance <code className="bg-muted px-1 rounded">recharts</code> provide real-time convergence and performance analytics in floating panels.</li>
+               </ul>
+            </div>
+          </div>
+
+          {/* Workflow */}
+          <div className="space-y-6">
+             <h2 className="text-3xl font-bold flex items-center gap-2 border-b border-border/50 pb-2">
+              <Workflow className="text-accent w-8 h-8" />
+              Optimization Workflow
+            </h2>
+            <div className="prose prose-invert max-w-none text-muted-foreground">
+               <p>The QuantaPath workflow is designed for immediate, actionable logistics planning:</p>
+               <ol>
+                   <li><strong>Ingestion:</strong> Users add Depots (Hubs) and Delivery Stops via the interactive map (click or right-click context menu) or search bar.</li>
+                   <li><strong>Matrix Generation:</strong> Upon triggering optimization, the backend builds a comprehensive Distance/Time matrix calculating the real-world travel costs between all nodes.</li>
+                   <li><strong>Algorithmic Execution:</strong> The system simultaneously executes multiple routing algorithms. This includes classical baselines (Simulated Annealing, Nearest Neighbor) alongside our proprietary quantum-inspired models (DARA and HAWS-QAOA).</li>
+                   <li><strong>Interactive Analysis:</strong> Results are streamed to the frontend where users can toggle a <strong>Split-Screen Comparison</strong>, overlay <strong>Heatmaps</strong> or <strong>Carbon Footprint</strong> estimators, and simulate the route using the <strong>Time Slider</strong>.</li>
+               </ol>
+            </div>
+          </div>
+
+          {/* DARA Abstract */}
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold flex items-center gap-2 border-b border-border/50 pb-2">
+               <Zap className="text-accent w-8 h-8" />
+               Under the Hood: DARA Algorithm
+            </h2>
+            <Card className="bg-card/50 backdrop-blur-md border-border/50 shadow-xl">
+              <CardHeader>
+                <CardTitle>Research Abstract</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-muted-foreground leading-relaxed">
+                <p>
+                  Road networks are critical infrastructure, yet the algorithms most widely used to rank junction criticality — degree, betweenness, closeness, PageRank, eigenvector and kcore centrality — are damage-agnostic, fixed-form, and blind to higher-order spectral effects.
+                </p>
+                <p>
+                  We introduce <strong>DARA (Dynamic Adaptive Resilience Analysis)</strong>, a self-supervised, graphconditioned Mixture-of-Experts (MoE) framework that fuses classical centralities, quantum-walk-inspired spectral descriptors, and purpose-built structural resilience features into a single learned criticality score.
+                </p>
+                <p>
+                  DARA supervises itself through Monte Carlo node-removal damage simulation and is trained with a composite objective blending a differentiable pairwise ranking surrogate with an exact validation criterion (Spearman, NDCG@10, top-K overlap, cross-dataset transfer).
+                </p>
+                <p>
+                  On three SNAP road networks — roadNet-CA (1.96M nodes), roadNet-TX (1.35M nodes), and roadNet-PA (1.09M nodes) — DARA improves Spearman rank correlation with ground-truth structural damage by 45.2%, 36.3%, and 53.4% over the strongest classical baseline (PageRank), with Friedman statistics exceeding 1,700 (p &lt; 10−6) on every dataset. Cross-dataset transfer averages Spearman ρ = 0.444 zero-shot, and ablations show the learned fusion mechanism — not any single feature group — drives the majority of the gain.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Key Contributions */}
           <div className="space-y-6">
@@ -167,9 +209,9 @@ export default function ResearchPage() {
           </div>
 
           <div className="bg-accent/10 border border-accent/20 rounded-xl p-6 text-center space-y-4">
-             <h3 className="text-xl font-bold text-accent">Conclusion</h3>
+             <h3 className="text-xl font-bold text-accent">Practical Impact & Use Cases</h3>
              <p className="text-muted-foreground max-w-2xl mx-auto">
-               DARA improves Spearman rank correlation with self-supervised ground truth by 36.3–53.4% over the strongest of ten classical baselines across three large road networks. It is domain-agnostic and its ranking is actionable for infrastructure triage.
+               By combining a robust, interactive frontend architecture with the unparalleled ranking logic of the DARA algorithm, QuantaPath offers massive improvements for real-world scenarios: <strong>Disaster Response</strong> (identifying critical failure nodes instantly), <strong>Supply Chain Throughput</strong> (rerouting around structural bottlenecks), and <strong>Fleet Optimization</strong> (reducing carbon footprints by avoiding path-length increases).
              </p>
           </div>
         </div>

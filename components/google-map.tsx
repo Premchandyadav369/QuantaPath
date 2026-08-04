@@ -145,6 +145,7 @@ export function GoogleMap({
   return (
     <APIProvider apiKey={apiKey} libraries={['places']}>
       <Map
+        style={{ width: '100%', height: '100%' }}
         defaultCenter={position}
         defaultZoom={12}
         mapId="a3b4c5d6e7f8g9h0"
